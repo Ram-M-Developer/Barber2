@@ -14,6 +14,13 @@ coverage/
 # Build output
 dist/
 
+# Maven build output
+target/
+*.class
+*.jar
+*.war
+*.ear
+
 # OS files
 .DS_Store
 Thumbs.db
@@ -21,3 +28,7 @@ Thumbs.db
 # IDE files
 .vscode/
 .idea/
+*.iml
+.classpath
+.project
+.settings/
