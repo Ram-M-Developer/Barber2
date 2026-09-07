@@ -42,6 +42,12 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     Optional<Appointment> findByAppointmentDateAndTimeSlotAndStatusIn(
             LocalDate appointmentDate, String timeSlot, Collection<String> statuses);
 
+    List<Appointment> findAllByAppointmentDateAndTimeSlotAndStatusIn(
+            LocalDate appointmentDate, String timeSlot, Collection<String> statuses);
+
+    long countByAppointmentDateAndTimeSlotAndStatusIn(
+            LocalDate appointmentDate, String timeSlot, Collection<String> statuses);
+
     @Query("SELECT a FROM Appointment a WHERE a.status = :status")
     List<Appointment> findByStatus(@Param("status") String status);
 }

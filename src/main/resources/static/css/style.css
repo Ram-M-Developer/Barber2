@@ -1909,4 +1909,290 @@ body {
   color: #94a3b8 !important;
 }
 
+/* ==========================================================================
+   3-COLUMN ZERO-PAGE-SCROLL DASHBOARD (SEATS - SLOTS - WAITING QUEUE)
+   ========================================================================== */
+html, body {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+.booking-page-root {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+}
+
+.booking-main-row {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem 1rem;
+  overflow: hidden;
+}
+
+.booking-col {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.booking-col-seats {
+  flex: 0 0 28%;
+  max-width: 28%;
+}
+
+.booking-col-slots {
+  flex: 1 1 44%;
+  min-width: 0;
+}
+
+.booking-col-queue {
+  flex: 0 0 28%;
+  max-width: 28%;
+}
+
+@media (max-width: 991px) {
+  html, body {
+    height: auto !important;
+    overflow: auto !important;
+  }
+  .booking-page-root {
+    height: auto;
+    overflow: auto;
+  }
+  .booking-main-row {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+  .booking-col-seats,
+  .booking-col-slots,
+  .booking-col-queue {
+    flex: 1 1 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 500px;
+  }
+}
+
+.booking-col-header {
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.booking-col-header h5 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.booking-col-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.85rem;
+}
+
+.booking-col-body::-webkit-scrollbar {
+  width: 5px;
+}
+.booking-col-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.booking-col-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Seat Cards */
+.seat-card-compact {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.85rem;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+.seat-card-compact.available {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+.seat-card-compact.occupied {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+.seat-card-compact.waiting {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.seat-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+.seat-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.seat-status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.seat-status-badge.available {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.seat-status-badge.occupied {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+.seat-status-badge.waiting {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.seat-meta-row {
+  font-size: 0.84rem;
+  color: #334155;
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.seat-meta-label {
+  font-weight: 700;
+  color: #64748b;
+  min-width: 72px;
+}
+.seat-meta-val {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Time Slot Items */
+.slot-capacity-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+.slot-capacity-card:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+}
+.slot-capacity-card.full {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.slot-time-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.slot-badge-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.slot-badge-pill.available-2 {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.slot-badge-pill.available-1 {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+.slot-badge-pill.full {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+/* Waiting List Items */
+.queue-counter-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.queue-counter-number {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #2563eb;
+}
+.queue-list-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.8rem;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 0.45rem;
+}
+.queue-rank-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-right: 0.65rem;
+  flex-shrink: 0;
+}
+
+
 

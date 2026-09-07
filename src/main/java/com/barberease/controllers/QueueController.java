@@ -80,11 +80,25 @@ public class QueueController {
     @GetMapping("/waiting")
     public ResponseEntity<Map<String, Object>> getWaiting() {
         List<Queue> waiting = queueService.getWaitingQueue();
+        List<Map<String, Object>> list = new java.util.ArrayList<>();
+
+        for (int i = 0; i < waiting.size(); i++) {
+            Queue q = waiting.get(i);
+            Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("id", q.getId());
+            m.put("position", i + 1);
+            m.put("token_number", q.getTokenNumber());
+            m.put("status", q.getStatus());
+            String name = q.getCustomer() != null ? q.getCustomer().getName() : "Customer";
+            m.put("customer_name", name);
+            m.put("service_name", q.getService() != null ? q.getService().getName() : "Haircut");
+            list.add(m);
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("success", true);
-        body.put("count", waiting.size());
-        body.put("data", waiting);
+        body.put("count", list.size());
+        body.put("data", list);
         return ResponseEntity.ok(body);
     }
 

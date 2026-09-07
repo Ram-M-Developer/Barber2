@@ -26,6 +26,9 @@ public class ChairController {
     private com.barberease.services.AppointmentService appointmentService;
 
     @Autowired
+    private com.barberease.repositories.AppointmentRepository appointmentRepository;
+
+    @Autowired
     private BarberWebSocketHandler webSocketHandler;
 
     private Long getAuthenticatedCustomerId() {
@@ -39,10 +42,56 @@ public class ChairController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAll() {
         List<Chair> chairs = chairService.getAllChairs();
+        List<Map<String, Object>> enriched = new java.util.ArrayList<>();
+
+        for (Chair chair : chairs) {
+            Map<String, Object> map = new java.util.LinkedHashMap<>();
+            map.put("id", chair.getId());
+            map.put("chair_number", chair.getChairNumber());
+            map.put("name", "Seat " + chair.getChairNumber());
+            String customerName = "---";
+            String timeSlot = "---";
+            Long appointmentId = null;
+
+            List<com.barberease.models.Appointment> appts = appointmentRepository.findByChairId(chair.getId());
+            for (com.barberease.models.Appointment a : appts) {
+                if (("confirmed".equalsIgnoreCase(a.getStatus()) || "in_progress".equalsIgnoreCase(a.getStatus()))
+                        && a.getAppointmentDate() != null && a.getAppointmentDate().equals(java.time.LocalDate.now())) {
+                    if (a.getCustomer() != null) {
+                        customerName = a.getCustomer().getName();
+                    }
+                    if (a.getTimeSlot() != null) {
+                        timeSlot = a.getTimeSlot();
+                    }
+                    appointmentId = a.getId();
+                    break;
+                }
+            }
+
+            if ("---".equals(customerName) && chair.getReservedByCustomer() != null) {
+                customerName = chair.getReservedByCustomer().getName();
+                if (chair.getReservedAt() != null) {
+                    timeSlot = chair.getReservedAt().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"));
+                }
+            }
+
+            String status = chair.getStatus();
+            if (!"---".equals(customerName) && ("available".equalsIgnoreCase(status) || "reserved".equalsIgnoreCase(status))) {
+                status = "occupied";
+            }
+
+            map.put("status", status);
+            map.put("is_active", chair.isActive());
+            map.put("customer_name", customerName);
+            map.put("time", timeSlot);
+            map.put("appointment_id", appointmentId);
+            map.put("reserved_by_customer", chair.getReservedByCustomer());
+            enriched.add(map);
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("success", true);
-        body.put("data", chairs);
+        body.put("data", enriched);
         return ResponseEntity.ok(body);
     }
 
