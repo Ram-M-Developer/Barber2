@@ -14,9 +14,9 @@
   <aside class="admin-sidebar shadow">
     <div class="px-4 py-2 border-bottom border-secondary mb-3">
       <a class="brand-logo text-decoration-none" href="/admin/dashboard.html">
-        <i class="fa-solid fa-user-shield text-danger"></i> BARBERFLIX
+        <i class="fa-solid fa-scissors" style="color:var(--be-primary)"></i> BARBER<span style="color:#ffffff">EASE</span>
       </a>
-      <span class="badge bg-danger fs-8 mt-1">ADMIN CONTROL</span>
+      <span class="badge fs-8 mt-1" style="background:rgba(37,99,235,0.15);color:#93c5fd;border:1px solid rgba(37,99,235,0.3)">ADMIN CONTROL</span>
     </div>
     
     <nav class="nav flex-column">
@@ -31,10 +31,10 @@
 
     <div class="position-absolute bottom-0 start-0 w-100 p-3 border-top border-secondary bg-dark-subtle">
       <div class="d-flex align-items-center gap-2 mb-2">
-        <i class="fa-solid fa-user-circle text-danger fs-5"></i>
+        <i class="fa-solid fa-user-circle fs-5" style="color:var(--be-primary)"></i>
         <span class="small fw-bold text-white-50" id="admin-user-display">Admin</span>
       </div>
-      <button class="btn btn-outline-danger btn-sm w-100 fw-bold" onclick="handleLogout()">
+      <button class="btn btn-outline-secondary btn-sm w-100 fw-bold text-white" onclick="handleLogout()">
         <i class="fa-solid fa-right-from-bracket me-1"></i>Logout
       </button>
     </div>
@@ -64,25 +64,25 @@
       <div class="row g-4 mb-4" id="stats-banner">
         <div class="col-md-3 col-6">
           <div class="stat-card">
-            <div class="stat-value text-danger" id="stat-today-bookings">0</div>
+            <div class="stat-value text-primary" id="stat-today-bookings">0</div>
             <div class="stat-label">Today's Bookings</div>
           </div>
         </div>
         <div class="col-md-3 col-6">
           <div class="stat-card">
-            <div class="stat-value text-success" id="stat-today-completed">0</div>
+            <div class="stat-value text-white" id="stat-today-completed">0</div>
             <div class="stat-label">Served / Completed</div>
           </div>
         </div>
         <div class="col-md-3 col-6">
           <div class="stat-card">
-            <div class="stat-value text-warning" id="stat-queue-waiting">0</div>
-            <div class="stat-label">Customers Waiting</div>
+            <div class="stat-value text-info" id="stat-queue-waiting">0</div>
+            <div class="stat-label">Clients Waiting</div>
           </div>
         </div>
         <div class="col-md-3 col-6">
           <div class="stat-card">
-            <div class="stat-value text-info" id="stat-total-revenue">$0.00</div>
+            <div class="stat-value text-primary" id="stat-total-revenue">$0.00</div>
             <div class="stat-label">Today's Revenue</div>
           </div>
         </div>
@@ -160,23 +160,77 @@
 
     <!-- ================= SECTION: QUEUE CENTER ================= -->
     <div class="tab-section d-none" id="sec-queue">
-      <div class="card card-dark shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0 fw-bold">Virtual Wait Queue List</h5>
-          <button class="btn btn-danger btn-sm fw-bold" onclick="callNextQueue()"><i class="fa-solid fa-volume-high me-1"></i>Call Next Customer</button>
+      <!-- Quick Queue KPI Strip -->
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="card card-dark p-3 text-center border-start border-warning border-3">
+            <div class="text-muted small text-uppercase fw-semibold">Waiting</div>
+            <div class="fs-3 fw-bold text-warning" id="kpi-queue-waiting">0</div>
+          </div>
         </div>
+        <div class="col-6 col-md-3">
+          <div class="card card-dark p-3 text-center border-start border-info border-3">
+            <div class="text-muted small text-uppercase fw-semibold">Called</div>
+            <div class="fs-3 fw-bold text-info" id="kpi-queue-called">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card card-dark p-3 text-center border-start border-primary border-3">
+            <div class="text-muted small text-uppercase fw-semibold">In Chair (Seated)</div>
+            <div class="fs-3 fw-bold text-primary" id="kpi-queue-seated">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card card-dark p-3 text-center border-start border-success border-3">
+            <div class="text-muted small text-uppercase fw-semibold">Served Today</div>
+            <div class="fs-3 fw-bold text-success" id="kpi-queue-served">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-dark shadow-sm">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-ol me-2 text-danger"></i>Queue Management Center</h5>
+            <small class="text-muted">Manage tokens through Waiting → Called → Seated → Served lifecycle</small>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-light btn-sm" onclick="fetchQueueList()"><i class="fa-solid fa-rotate me-1"></i>Refresh</button>
+            <button class="btn btn-danger btn-sm fw-bold" onclick="callNextQueue()"><i class="fa-solid fa-volume-high me-1"></i>Call Next Waiting</button>
+          </div>
+        </div>
+
         <div class="card-body">
+          <!-- Queue Status Filter Pills -->
+          <div class="d-flex flex-wrap gap-2 mb-3" id="queue-filter-tabs">
+            <button class="btn btn-sm btn-light active queue-filter-btn" data-filter="all" onclick="filterQueueTable('all')">
+              All Tokens <span class="badge bg-dark ms-1" id="q-cnt-all">0</span>
+            </button>
+            <button class="btn btn-sm btn-outline-warning queue-filter-btn" data-filter="waiting" onclick="filterQueueTable('waiting')">
+              <i class="fa-solid fa-clock me-1"></i>Waiting <span class="badge bg-warning text-dark ms-1" id="q-cnt-waiting">0</span>
+            </button>
+            <button class="btn btn-sm btn-outline-info queue-filter-btn" data-filter="called" onclick="filterQueueTable('called')">
+              <i class="fa-solid fa-volume-high me-1"></i>Called <span class="badge bg-info text-dark ms-1" id="q-cnt-called">0</span>
+            </button>
+            <button class="btn btn-sm btn-outline-primary queue-filter-btn" data-filter="serving" onclick="filterQueueTable('serving')">
+              <i class="fa-solid fa-scissors me-1"></i>Seated (In Service) <span class="badge bg-primary ms-1" id="q-cnt-serving">0</span>
+            </button>
+            <button class="btn btn-sm btn-outline-success queue-filter-btn" data-filter="completed" onclick="filterQueueTable('completed')">
+              <i class="fa-solid fa-check me-1"></i>Served (Completed) <span class="badge bg-success ms-1" id="q-cnt-completed">0</span>
+            </button>
+          </div>
+
           <div class="table-responsive">
             <table class="table table-dark table-striped table-hover table-dark-custom align-middle">
               <thead>
                 <tr>
-                  <th>Position</th>
-                  <th>Token</th>
-                  <th>Customer Name</th>
-                  <th>Grooming Service</th>
-                  <th>Est. Wait</th>
+                  <th style="width: 80px;">Token</th>
+                  <th>Customer</th>
+                  <th>Service</th>
+                  <th>Chair / Station</th>
+                  <th>Wait / Elapsed</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th style="min-width: 180px;">Lifecycle Actions</th>
                 </tr>
               </thead>
               <tbody id="tbl-queue-body">

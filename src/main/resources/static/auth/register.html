@@ -3,85 +3,424 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register — BarberEase</title>
+  <title>Create Account — BarberEase</title>
+  <meta name="description" content="Register your BarberEase account to book barber chairs, join digital queues, and manage your appointments.">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body class="auth-wrapper">
+<body class="auth-wrapper" style="background-color: var(--be-dark);">
 
-  <div class="auth-card" style="max-width: 500px;">
+  <div class="auth-card auth-card-wide fb-feed-card" style="border-radius: 8px;">
+
+    <!-- Brand -->
     <div class="text-center mb-4">
-      <a href="/" class="brand-logo justify-content-center text-decoration-none">
-        <i class="fa-solid fa-scissors"></i> BARBER<span class="text-danger">EASE</span>
-      </a>
-      <p class="text-muted mt-2">Create an account to book and check queue positions</p>
+      <div class="d-flex justify-content-center mb-2">
+        <div class="fb-logo-icon" style="width:48px;height:48px;font-size:1.5rem">
+          <i class="fa-solid fa-scissors"></i>
+        </div>
+      </div>
+      <h3 class="fw-bold text-dark mb-0">BarberEase</h3>
+      <p class="text-muted small mt-1">Create your customer account in seconds</p>
     </div>
 
-    <!-- Alert Message Container -->
+    <!-- Step Wizard Indicator -->
+    <div class="mb-3">
+      <div class="step-indicator">
+        <div class="step-dot active" id="step-dot-1">1</div>
+        <div class="step-line" id="step-line-1"></div>
+        <div class="step-dot" id="step-dot-2">2</div>
+        <div class="step-line" id="step-line-2"></div>
+        <div class="step-dot" id="step-dot-3"><i class="fa-solid fa-check" style="font-size:0.7rem"></i></div>
+      </div>
+      <div class="step-label-row mt-2">
+        <span class="step-label active" id="step-label-1">Personal Info</span>
+        <span class="step-label" id="step-label-2">Security</span>
+        <span class="step-label" id="step-label-3">Done</span>
+      </div>
+    </div>
+
+    <!-- Alert Container -->
     <div id="alert-container"></div>
 
-    <form onsubmit="handleRegister(event)">
-      <div class="row">
-        <div class="col-md-12 mb-3">
-          <label for="name" class="form-label">Full Name</label>
+    <form id="register-form" onsubmit="handleRegister(event)" novalidate>
+
+      <!-- ── STEP 1: Personal Info ── -->
+      <div class="step-pane active" id="step-pane-1">
+        <div class="mb-3">
+          <label for="name" class="form-label">Full Name <span style="color:#60a5fa">*</span></label>
           <div class="input-group">
-            <span class="input-group-text bg-dark-subtle border-secondary text-white-50"><i class="fa-solid fa-user"></i></span>
-            <input type="text" class="form-control border-secondary text-white" id="name" required placeholder="John Doe">
+            <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+            <input type="text" class="form-control" id="name" required
+              placeholder="John Doe" autocomplete="name">
           </div>
+          <div class="invalid-feedback" id="name-error"></div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="email" class="form-label">Email Address <span style="color:#60a5fa">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
+              <input type="email" class="form-control" id="email" required
+                placeholder="name@example.com" autocomplete="email">
+              <span class="input-group-text" id="email-check-icon" style="min-width:40px;justify-content:center">
+                <i class="fa-solid fa-circle-notch fa-spin text-muted" style="font-size:0.75rem;display:none" id="email-spinner"></i>
+              </span>
+            </div>
+            <div class="mt-1" id="email-status"></div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="phone" class="form-label">Phone Number <span style="color:#60a5fa">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-phone"></i></span>
+              <input type="tel" class="form-control" id="phone" required
+                placeholder="+1 555-1234" autocomplete="tel">
+            </div>
+            <div class="invalid-feedback" id="phone-error"></div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="gender" class="form-label">Gender</label>
+            <select class="form-select" id="gender">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other / Prefer not to say</option>
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="dob" class="form-label">Date of Birth</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-cake-candles"></i></span>
+              <input type="date" class="form-control" id="dob">
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="address" class="form-label">Address <span class="text-muted small">(optional)</span></label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-location-dot"></i></span>
+            <input type="text" class="form-control" id="address" placeholder="123 Main St, City">
+          </div>
+        </div>
+
+        <button type="button" class="fb-btn-primary w-100 py-2 fs-6" onclick="goToStep(2)" id="step1-next">
+          Next — Security Setup <i class="fa-solid fa-arrow-right ms-2"></i>
+        </button>
+      </div>
+
+      <!-- ── STEP 2: Security ── -->
+      <div class="step-pane" id="step-pane-2">
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Password <span style="color:var(--be-primary)">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+            <input type="password" class="form-control" id="password" required
+              placeholder="Create a strong password" autocomplete="new-password"
+              oninput="checkPasswordStrength(this.value)">
+            <button type="button" class="input-group-text border-0" style="cursor:pointer;background:#f8fafc;border:1px solid var(--be-border)!important;"
+              onclick="togglePassword('password', this)">
+              <i class="fa-solid fa-eye text-muted" id="pwd-eye"></i>
+            </button>
+          </div>
+          <!-- Strength Bar -->
+          <div class="password-strength-bar mt-2">
+            <div class="password-strength-fill" id="pwd-strength-fill"></div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-1">
+            <span class="strength-label text-muted" id="pwd-strength-label">Enter a password</span>
+            <span class="strength-label" id="pwd-strength-text"></span>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="confirm-password" class="form-label">Confirm Password <span style="color:var(--be-primary)">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-lock-open"></i></span>
+            <input type="password" class="form-control" id="confirm-password" required
+              placeholder="Repeat your password" autocomplete="new-password"
+              oninput="checkPasswordMatch()">
+            <button type="button" class="input-group-text border-0" style="cursor:pointer;background:#f8fafc;border:1px solid var(--be-border)!important;"
+              onclick="togglePassword('confirm-password', this)">
+              <i class="fa-solid fa-eye text-muted"></i>
+            </button>
+          </div>
+          <div class="mt-1" id="pwd-match-status"></div>
+        </div>
+
+        <!-- Security Checklist -->
+        <div class="mb-4 p-3 rounded" style="background:#f8fafc;border:1px solid var(--be-border)">
+          <p class="text-muted small fw-bold mb-2">Password Requirements:</p>
+          <div class="row g-1">
+            <div class="col-6"><div class="small" id="req-length"><i class="fa-solid fa-circle text-secondary me-1" style="font-size:0.5rem"></i>8+ characters</div></div>
+            <div class="col-6"><div class="small" id="req-upper"><i class="fa-solid fa-circle text-secondary me-1" style="font-size:0.5rem"></i>Uppercase letter</div></div>
+            <div class="col-6"><div class="small" id="req-number"><i class="fa-solid fa-circle text-secondary me-1" style="font-size:0.5rem"></i>Number</div></div>
+            <div class="col-6"><div class="small" id="req-special"><i class="fa-solid fa-circle text-secondary me-1" style="font-size:0.5rem"></i>Special char</div></div>
+          </div>
+        </div>
+
+        <!-- Terms Checkbox -->
+        <div class="mb-4">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="agree-terms" required>
+            <label class="form-check-label small text-muted" for="agree-terms">
+              I agree to BarberEase's <a href="#" class="text-decoration-none" style="color:var(--be-primary)">Terms of Service</a> and <a href="#" class="text-decoration-none" style="color:var(--be-primary)">Privacy Policy</a>
+            </label>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="button" class="fb-btn-secondary w-50 py-2" onclick="goToStep(1)">
+            <i class="fa-solid fa-arrow-left me-2"></i> Back
+          </button>
+          <button type="submit" class="fb-btn-primary w-50 py-2" id="submit-btn">
+            <i class="fa-solid fa-user-plus me-2"></i> Create Account
+          </button>
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label for="email" class="form-label">Email Address</label>
-          <div class="input-group">
-            <span class="input-group-text bg-dark-subtle border-secondary text-white-50"><i class="fa-solid fa-envelope"></i></span>
-            <input type="email" class="form-control border-secondary text-white" id="email" required placeholder="name@example.com">
+      <!-- ── STEP 3: Success ── -->
+      <div class="step-pane" id="step-pane-3">
+        <div class="booking-confirmed-card py-4" style="background:#f8fafc;border:1px solid var(--be-border)">
+          <div class="check-circle" style="background:var(--be-primary)">
+            <i class="fa-solid fa-check"></i>
           </div>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label for="phone" class="form-label">Phone Number</label>
-          <div class="input-group">
-            <span class="input-group-text bg-dark-subtle border-secondary text-white-50"><i class="fa-solid fa-phone"></i></span>
-            <input type="tel" class="form-control border-secondary text-white" id="phone" required placeholder="555-1234">
+          <h4 class="fw-bold mb-1 text-dark">Account Created!</h4>
+          <p class="text-muted small mb-3">Welcome to BarberEase, <strong id="success-name" class="text-dark"></strong></p>
+          <div class="loading-dots">
+            <span></span><span></span><span></span>
           </div>
+          <p class="text-muted small mt-2">Redirecting to your dashboard…</p>
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label for="gender" class="form-label">Gender (Optional)</label>
-          <select class="form-select bg-dark-subtle border-secondary text-white" id="gender">
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label for="password" class="form-label">Password</label>
-          <div class="input-group">
-            <span class="input-group-text bg-dark-subtle border-secondary text-white-50"><i class="fa-solid fa-lock"></i></span>
-            <input type="password" class="form-control border-secondary text-white" id="password" required placeholder="••••••••">
-          </div>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label for="address" class="form-label">Address (Optional)</label>
-        <textarea class="form-control bg-dark-subtle border-secondary text-white" id="address" rows="2" placeholder="Your street address"></textarea>
-      </div>
-
-      <button type="submit" class="btn btn-danger w-100 py-2.5 fw-bold mt-2">
-        <i class="fa-solid fa-user-plus me-2"></i>Create Account
-      </button>
     </form>
 
-    <div class="text-center mt-4 pt-2 border-top border-secondary">
-      <p class="text-muted mb-0">Already have an account? <a href="/auth/login.html" class="text-danger text-decoration-none fw-bold">Sign In</a></p>
+    <!-- Footer Link -->
+    <div class="text-center mt-4 pt-3 border-top" style="border-color:var(--be-border)!important" id="login-link">
+      <p class="text-muted small mb-0">Already have an account?
+        <a href="/auth/login.html" class="text-decoration-none fw-bold" style="color:var(--be-primary)">Sign In</a>
+      </p>
     </div>
+
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/auth.js"></script>
+  <script>
+    // ── Step Wizard Logic ──
+    let currentStep = 1;
+
+    function goToStep(step) {
+      if (step === 2 && !validateStep1()) return;
+
+      // Update panes
+      document.querySelectorAll('.step-pane').forEach(p => p.classList.remove('active'));
+      document.getElementById(`step-pane-${step}`).classList.add('active');
+
+      // Update step dots
+      for (let i = 1; i <= 3; i++) {
+        const dot = document.getElementById(`step-dot-${i}`);
+        const label = document.getElementById(`step-label-${i}`);
+        dot.classList.remove('active', 'completed');
+        label.classList.remove('active', 'completed');
+        if (i < step) {
+          dot.classList.add('completed');
+          label.classList.add('completed');
+          dot.innerHTML = '<i class="fa-solid fa-check" style="font-size:0.7rem"></i>';
+        } else if (i === step) {
+          dot.classList.add('active');
+          label.classList.add('active');
+          if (i < 3) dot.textContent = i;
+        } else {
+          if (i < 3) dot.textContent = i;
+        }
+      }
+
+      // Update step lines
+      for (let i = 1; i <= 2; i++) {
+        const line = document.getElementById(`step-line-${i}`);
+        line.classList.toggle('completed', i < step);
+      }
+
+      currentStep = step;
+
+      // Hide login link on success step
+      document.getElementById('login-link').style.display = step === 3 ? 'none' : '';
+    }
+
+    function validateStep1() {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+
+      if (!name) {
+        showInlineError('name-error', 'Full name is required.');
+        document.getElementById('name').classList.add('is-invalid');
+        return false;
+      }
+      if (!email || !email.includes('@')) {
+        showToastLocal('Please enter a valid email address.', 'warning');
+        return false;
+      }
+      if (!phone || phone.length < 7) {
+        showToastLocal('Please enter a valid phone number.', 'warning');
+        return false;
+      }
+      return true;
+    }
+
+    function showInlineError(id, msg) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = msg;
+    }
+
+    function showToastLocal(msg, type = 'danger') {
+      const ac = document.getElementById('alert-container');
+      ac.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show py-2 small" role="alert">
+        <i class="fa-solid fa-circle-exclamation me-1"></i>${msg}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>`;
+      setTimeout(() => { if(ac) ac.innerHTML = ''; }, 4000);
+    }
+
+    // ── Password Strength ──
+    function checkPasswordStrength(pwd) {
+      const fill = document.getElementById('pwd-strength-fill');
+      const label = document.getElementById('pwd-strength-label');
+      const text = document.getElementById('pwd-strength-text');
+
+      const hasLength = pwd.length >= 8;
+      const hasUpper = /[A-Z]/.test(pwd);
+      const hasNumber = /[0-9]/.test(pwd);
+      const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
+
+      // Update requirement bullets
+      updateReq('req-length', hasLength);
+      updateReq('req-upper', hasUpper);
+      updateReq('req-number', hasNumber);
+      updateReq('req-special', hasSpecial);
+
+      const score = [hasLength, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+      fill.className = 'password-strength-fill';
+
+      if (!pwd) { fill.style.width = '0%'; label.textContent = 'Enter a password'; text.textContent = ''; return; }
+      if (score === 1) { fill.classList.add('strength-weak'); label.textContent = 'Weak password'; text.className = 'strength-label text-danger'; text.textContent = '⚠️'; }
+      else if (score === 2) { fill.classList.add('strength-fair'); label.textContent = 'Fair password'; text.className = 'strength-label text-warning'; text.textContent = '🔶'; }
+      else if (score === 3) { fill.classList.add('strength-good'); label.textContent = 'Good password'; text.className = 'strength-label text-info'; text.textContent = '👍'; }
+      else if (score === 4) { fill.classList.add('strength-strong'); label.textContent = 'Strong password'; text.className = 'strength-label text-success'; text.textContent = '✅'; }
+    }
+
+    function updateReq(id, met) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const icon = el.querySelector('i');
+      if (met) {
+        icon.className = 'fa-solid fa-circle-check text-success me-1';
+        el.style.color = 'var(--be-green)';
+      } else {
+        icon.className = 'fa-solid fa-circle text-secondary me-1';
+        el.style.color = '';
+      }
+    }
+
+    function checkPasswordMatch() {
+      const pwd = document.getElementById('password').value;
+      const conf = document.getElementById('confirm-password').value;
+      const status = document.getElementById('pwd-match-status');
+      if (!conf) { status.innerHTML = ''; return; }
+      if (pwd === conf) {
+        status.innerHTML = '<span class="small text-success"><i class="fa-solid fa-check me-1"></i>Passwords match</span>';
+      } else {
+        status.innerHTML = '<span class="small text-danger"><i class="fa-solid fa-times me-1"></i>Passwords do not match</span>';
+      }
+    }
+
+    function togglePassword(fieldId, btn) {
+      const field = document.getElementById(fieldId);
+      const icon = btn.querySelector('i');
+      if (field.type === 'password') {
+        field.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash text-muted';
+      } else {
+        field.type = 'password';
+        icon.className = 'fa-solid fa-eye text-muted';
+      }
+    }
+
+    // ── Email live check (debounced) ──
+    let emailCheckTimer;
+    document.getElementById('email').addEventListener('input', function() {
+      const status = document.getElementById('email-status');
+      const spinner = document.getElementById('email-spinner');
+      clearTimeout(emailCheckTimer);
+      status.innerHTML = '';
+      if (!this.value.includes('@')) return;
+      spinner.style.display = 'inline-block';
+      emailCheckTimer = setTimeout(async () => {
+        spinner.style.display = 'none';
+        // Simulate check (in real app: GET /api/auth/check-email?email=...)
+        status.innerHTML = '<span class="small text-success"><i class="fa-solid fa-check me-1"></i>Email looks good</span>';
+      }, 800);
+    });
+
+    // ── Override handleRegister to show step 3 on success ──
+    const _origHandleRegister = handleRegister;
+    window.handleRegister = async function(event) {
+      event.preventDefault();
+
+      // Validate passwords
+      const pwd = document.getElementById('password').value;
+      const conf = document.getElementById('confirm-password').value;
+      if (pwd !== conf) {
+        showToastLocal('Passwords do not match!', 'danger');
+        return;
+      }
+      if (!document.getElementById('agree-terms').checked) {
+        showToastLocal('Please accept the Terms of Service to continue.', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span>';
+
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const phone = document.getElementById('phone').value;
+      const gender = document.getElementById('gender').value;
+      const password = pwd;
+      const address = document.getElementById('address').value;
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, gender, password, address })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (data.errors && data.errors.length > 0) throw new Error(data.errors.map(e => e.message).join(', '));
+          throw new Error(data.message || 'Registration failed.');
+        }
+        localStorage.setItem('barber_token', data.data.token);
+        localStorage.setItem('barber_user', JSON.stringify(data.data.customer));
+        localStorage.setItem('barber_user_type', 'customer');
+
+        // Show success step
+        document.getElementById('success-name').textContent = name.split(' ')[0];
+        goToStep(3);
+        setTimeout(() => { window.location.href = '/customer/dashboard.html'; }, 2500);
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-user-plus me-2"></i> Create Account';
+        showToastLocal(err.message, 'danger');
+      }
+    };
+  </script>
 </body>
 </html>

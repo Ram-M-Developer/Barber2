@@ -19,6 +19,10 @@ public class Queue {
     @JoinColumn(name = "service_id", nullable = false)
     private Service service;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "chair_id")
+    private Chair chair;
+
     @Column(name = "token_number", nullable = false, length = 20)
     private String tokenNumber;
 
@@ -80,6 +84,14 @@ public class Queue {
 
     public void setService(Service service) {
         this.service = service;
+    }
+
+    public Chair getChair() {
+        return chair;
+    }
+
+    public void setChair(Chair chair) {
+        this.chair = chair;
     }
 
     public String getTokenNumber() {

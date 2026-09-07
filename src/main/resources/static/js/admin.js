@@ -219,7 +219,7 @@ async function fetchAppointmentsList() {
             <td>${a.chair_id ? 'Chair ' + a.chair_id : 'Not Assigned'}</td>
             <td>${a.time_slot}</td>
             <td>${statusBadge}</td>
-            <td>${actionBtns || '<span class="text-white-50 small">-</span>'}</td>
+            <td>${actionBtns || '<span class="opacity-50 small">-</span>'}</td>
           </tr>
         `;
       }).join('');
@@ -229,42 +229,166 @@ async function fetchAppointmentsList() {
   }
 }
 
-// Fetch Full Queue List
+// Global queue state for filtering
+let currentQueueFilter = 'all';
+let allQueueEntries = [];
+
+// Filter queue table
+function filterQueueTable(filter) {
+  currentQueueFilter = filter;
+  document.querySelectorAll('.queue-filter-btn').forEach(btn => {
+    if (btn.getAttribute('data-filter') === filter) {
+      btn.classList.add('active', 'btn-light');
+      btn.classList.remove('btn-outline-warning', 'btn-outline-info', 'btn-outline-primary', 'btn-outline-success');
+    } else {
+      btn.classList.remove('active', 'btn-light');
+    }
+  });
+  renderQueueTableRows();
+}
+window.filterQueueTable = filterQueueTable;
+
+// Fetch Full Queue List with all statuses
 async function fetchQueueList() {
+  const token = localStorage.getItem('barber_token');
   try {
-    const res = await fetch('/api/queue');
+    const res = await fetch('/api/queue?all=true', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const data = await res.json();
     if (res.ok) {
-      const tbody = document.getElementById('tbl-queue-body');
-      if (!tbody) return;
+      allQueueEntries = data.data || [];
 
-      const waiting = data.data.filter(q => q.status === 'waiting');
+      // Update KPI counters
+      const waiting = allQueueEntries.filter(q => q.status === 'waiting');
+      const called = allQueueEntries.filter(q => q.status === 'called');
+      const serving = allQueueEntries.filter(q => q.status === 'serving');
+      const completed = allQueueEntries.filter(q => q.status === 'completed');
 
-      if (waiting.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">No waiting queue entries.</td></tr>`;
-        return;
-      }
+      const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setEl('kpi-queue-waiting', waiting.length);
+      setEl('kpi-queue-called', called.length);
+      setEl('kpi-queue-seated', serving.length);
+      setEl('kpi-queue-served', completed.length);
 
-      tbody.innerHTML = waiting.map(q => `
-        <tr>
-          <td><span class="badge bg-danger">#${q.position}</span></td>
-          <td><strong>${q.token_number}</strong></td>
-          <td>${q.customer?.name}</td>
-          <td>${q.service?.name}</td>
-          <td>${q.estimated_wait_minutes} min</td>
-          <td><span class="badge bg-warning text-dark">${q.status.toUpperCase()}</span></td>
-          <td>
-            <button class="btn btn-outline-danger btn-sm" onclick="cancelQueueEntry(${q.id})">Remove</button>
-          </td>
-        </tr>
-      `).join('');
+      setEl('q-cnt-all', allQueueEntries.length);
+      setEl('q-cnt-waiting', waiting.length);
+      setEl('q-cnt-called', called.length);
+      setEl('q-cnt-serving', serving.length);
+      setEl('q-cnt-completed', completed.length);
+
+      renderQueueTableRows();
     }
   } catch (err) {
-    console.error(err);
+    console.error('Error fetching queue list:', err);
   }
 }
+window.fetchQueueList = fetchQueueList;
 
-// Call next waiting customer from queue
+function renderQueueTableRows() {
+  const tbody = document.getElementById('tbl-queue-body');
+  if (!tbody) return;
+
+  let filtered = allQueueEntries;
+  if (currentQueueFilter !== 'all') {
+    filtered = allQueueEntries.filter(q => q.status === currentQueueFilter);
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">
+      <i class="fa-solid fa-inbox fa-2x d-block mb-2 text-secondary"></i>No tokens in "${currentQueueFilter}" status.
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(q => {
+    const st = (q.status || 'waiting').toLowerCase();
+
+    // Status badge
+    let statusBadge = '';
+    if (st === 'waiting') {
+      statusBadge = `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Waiting</span>`;
+    } else if (st === 'called') {
+      statusBadge = `<span class="badge bg-info text-dark"><i class="fa-solid fa-volume-high me-1"></i>Called</span>`;
+    } else if (st === 'serving') {
+      statusBadge = `<span class="badge bg-primary"><i class="fa-solid fa-scissors me-1"></i>Seated</span>`;
+    } else if (st === 'completed') {
+      statusBadge = `<span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Served</span>`;
+    } else {
+      statusBadge = `<span class="badge bg-secondary">${st.toUpperCase()}</span>`;
+    }
+
+    // Chair station display
+    const chairDisplay = q.chair
+      ? `<span class="badge bg-dark border border-primary text-info"><i class="fa-solid fa-chair me-1"></i>Station ${q.chair.chair_number}</span>`
+      : `<span class="text-muted small">— Unassigned</span>`;
+
+    // Wait / Time info
+    let waitInfo = '';
+    if (st === 'waiting') {
+      waitInfo = q.estimated_wait_minutes > 0 ? `~${q.estimated_wait_minutes} min` : 'Next up';
+    } else if (st === 'called') {
+      waitInfo = '<span class="text-warning small fw-bold">Ready for chair</span>';
+    } else if (st === 'serving') {
+      waitInfo = '<span class="text-primary small fw-bold">In progress ✂️</span>';
+    } else if (st === 'completed') {
+      waitInfo = '<span class="text-success small fw-bold">Completed ✓</span>';
+    }
+
+    // Action buttons based on lifecycle state
+    let actionButtons = '';
+    if (st === 'waiting') {
+      actionButtons = `
+        <button class="btn btn-warning btn-sm fw-bold me-1" onclick="callQueueCustomer(${q.id})" title="Call to free station">
+          <i class="fa-solid fa-volume-high me-1"></i>Call
+        </button>
+        <button class="btn btn-outline-danger btn-sm" onclick="cancelQueueEntry(${q.id})" title="Remove from queue">
+          <i class="fa-solid fa-trash"></i>
+        </button>`;
+    } else if (st === 'called') {
+      actionButtons = `
+        <button class="btn btn-primary btn-sm fw-bold me-1" onclick="seatQueueCustomer(${q.id})" title="Seat customer at chair">
+          <i class="fa-solid fa-chair me-1"></i>Seat
+        </button>
+        <button class="btn btn-outline-danger btn-sm" onclick="cancelQueueEntry(${q.id})" title="Cancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>`;
+    } else if (st === 'serving') {
+      actionButtons = `
+        <button class="btn btn-success btn-sm fw-bold" onclick="completeQueueCustomer(${q.id})" title="Mark service finished and free chair">
+          <i class="fa-solid fa-circle-check me-1"></i>Complete
+        </button>`;
+    } else if (st === 'completed') {
+      actionButtons = `<span class="text-success small fw-bold"><i class="fa-solid fa-circle-check me-1"></i>Served</span>`;
+    }
+
+    return `
+      <tr>
+        <td>
+          <div class="d-flex align-items-center gap-1">
+            <span class="badge bg-secondary" style="font-size:0.7rem">#${q.position}</span>
+            <strong class="text-white">${q.token_number}</strong>
+          </div>
+        </td>
+        <td>
+          <div class="fw-bold text-light">${q.customer?.name || 'Customer'}</div>
+          <div class="text-muted small">${q.customer?.phone || ''}</div>
+        </td>
+        <td>
+          <div class="text-light">${q.service?.name || 'Grooming'}</div>
+          <div class="text-muted small">${q.service?.duration_minutes ? q.service.duration_minutes + ' min' : ''}</div>
+        </td>
+        <td>${chairDisplay}</td>
+        <td>${waitInfo}</td>
+        <td>${statusBadge}</td>
+        <td>${actionButtons}</td>
+      </tr>`;
+  }).join('');
+}
+
+// ── Queue Lifecycle API Calls ──
+
+// 1. Call next waiting customer (global)
 async function callNextQueue() {
   const token = localStorage.getItem('barber_token');
   try {
@@ -274,8 +398,8 @@ async function callNextQueue() {
     });
     const data = await res.json();
     if (res.ok) {
-      showAdminToast(`Called ${data.data.queueEntry.token_number} to Chair ${data.data.chair.chair_number}!`, 'success');
-      loadTabContent();
+      showAdminToast(`📢 Called ${data.data.queueEntry.token_number} to Chair ${data.data.chair.chair_number}!`, 'success');
+      fetchQueueList();
     } else {
       throw new Error(data.message);
     }
@@ -283,6 +407,70 @@ async function callNextQueue() {
     showAdminToast(err.message, 'danger');
   }
 }
+window.callNextQueue = callNextQueue;
+
+// 2. Call specific customer
+async function callQueueCustomer(id) {
+  const token = localStorage.getItem('barber_token');
+  try {
+    const res = await fetch(`/api/queue/${id}/call`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showAdminToast(`📢 Called ${data.data.queueEntry.token_number} to Chair ${data.data.chair?.chair_number || '1'}!`, 'success');
+      fetchQueueList();
+    } else {
+      throw new Error(data.message);
+    }
+  } catch (err) {
+    showAdminToast(err.message, 'danger');
+  }
+}
+window.callQueueCustomer = callQueueCustomer;
+
+// 3. Seat customer & start service
+async function seatQueueCustomer(id) {
+  const token = localStorage.getItem('barber_token');
+  try {
+    const res = await fetch(`/api/queue/${id}/seat`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showAdminToast(`✂️ Customer seated at Chair ${data.data.chair?.chair_number || '1'}. Service started!`, 'success');
+      fetchQueueList();
+    } else {
+      throw new Error(data.message);
+    }
+  } catch (err) {
+    showAdminToast(err.message, 'danger');
+  }
+}
+window.seatQueueCustomer = seatQueueCustomer;
+
+// 4. Complete customer service
+async function completeQueueCustomer(id) {
+  const token = localStorage.getItem('barber_token');
+  try {
+    const res = await fetch(`/api/queue/${id}/complete`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showAdminToast('✅ Service completed! Chair freed.', 'success');
+      fetchQueueList();
+    } else {
+      throw new Error(data.message);
+    }
+  } catch (err) {
+    showAdminToast(err.message, 'danger');
+  }
+}
+window.completeQueueCustomer = completeQueueCustomer;
 
 // Start appointment
 async function startAppointment(id) {
@@ -292,11 +480,15 @@ async function startAppointment(id) {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}` }
     });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       showAdminToast('Appointment started successfully.', 'success');
       loadTabContent();
+    } else {
+      showAdminToast(data.message || 'Failed to start appointment', 'danger');
     }
   } catch (err) {
+    showAdminToast(err.message || 'Error starting appointment', 'danger');
     console.error(err);
   }
 }
@@ -309,11 +501,15 @@ async function completeAppointment(id) {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}` }
     });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       showAdminToast('Appointment completed. Chair is now available.', 'success');
       loadTabContent();
+    } else {
+      showAdminToast(data.message || 'Failed to complete appointment', 'danger');
     }
   } catch (err) {
+    showAdminToast(err.message || 'Error completing appointment', 'danger');
     console.error(err);
   }
 }
@@ -327,11 +523,15 @@ async function cancelAppointment(id) {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}` }
     });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       showAdminToast('Appointment cancelled.', 'warning');
       loadTabContent();
+    } else {
+      showAdminToast(data.message || 'Failed to cancel appointment', 'danger');
     }
   } catch (err) {
+    showAdminToast(err.message || 'Error cancelling appointment', 'danger');
     console.error(err);
   }
 }

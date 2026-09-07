@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Queue — BarberEase</title>
+  <meta name="description" content="Track your real-time queue position, waiting token, and estimated wait time on BarberEase.">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { background: var(--be-dark); }
+    .queue-page-hero {
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.15) 0%, transparent 60%),
+        linear-gradient(180deg, #07090e 0%, #0d111b 100%);
+      padding: 5rem 0 3rem;
+      text-align: center;
+      border-bottom: 1px solid var(--be-border);
+    }
+    .queue-board {
+      background: var(--be-card);
+      border: 1px solid var(--be-border);
+      border-radius: var(--be-radius);
+      overflow: hidden;
+    }
+    .queue-board-header {
+      background: rgba(37,99,235,0.06);
+      border-bottom: 1px solid var(--be-border);
+      padding: 0.9rem 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .now-serving-banner {
+      background: linear-gradient(90deg, rgba(37,99,235,0.12), rgba(37,99,235,0.04));
+      border: 1px solid rgba(37,99,235,0.25);
+      border-radius: 10px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .now-serving-token {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 3px;
+    }
+    .pulse-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: #38bdf8;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .pulse-live .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 6px #38bdf8;
+      animation: pulse-blue 1.2s infinite;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ FACEBOOK TOP NAVIGATION BAR ═══ -->
+  <nav class="fb-navbar fixed-top d-flex align-items-center justify-content-between">
+    <!-- Left: Brand Logo & Search Pill -->
+    <div class="d-flex align-items-center gap-3">
+      <a class="fb-brand" href="/customer/dashboard.html">
+        <div class="fb-logo-icon">
+          <i class="fa-solid fa-scissors"></i>
+        </div>
+        <span class="d-none d-sm-inline fw-bold">BarberEase</span>
+      </a>
+      <div class="fb-search-bar d-none d-md-flex">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search chairs, services..." />
+      </div>
+    </div>
+
+    <!-- Center: Facebook Icon Tabs -->
+    <div class="fb-nav-center">
+      <a class="fb-nav-tab" href="/customer/dashboard.html" title="Service Chairs">
+        <i class="fa-solid fa-chair"></i>
+      </a>
+      <a class="fb-nav-tab active" href="/customer/queue.html" title="Waiting Queue">
+        <i class="fa-solid fa-users"></i>
+      </a>
+      <a class="fb-nav-tab" href="/customer/profile.html" title="Account Profile">
+        <i class="fa-solid fa-circle-user"></i>
+      </a>
+    </div>
+
+    <!-- Right: Facebook Utility Circular Buttons & Logout -->
+    <div class="fb-right-actions">
+      <a href="/customer/dashboard.html" class="fb-btn-secondary d-none d-sm-inline-flex align-items-center gap-1 text-decoration-none">
+        <i class="fa-solid fa-chair" style="color:var(--be-primary)"></i>
+        <span>Chairs</span>
+      </a>
+      <button class="fb-circle-btn" onclick="handleLogout()" title="Log Out">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container py-4" style="margin-top: 60px; max-width: 1280px;">
+
+    <!-- Facebook Style Header Feed Card -->
+    <div class="fb-feed-card p-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="fb-avatar fb-avatar-blue" style="width:52px;height:52px;font-size:1.4rem">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <h3 class="fw-bold mb-0 text-dark">Live Waiting Queue</h3>
+              <span class="badge" style="background:rgba(37,99,235,0.1);color:var(--be-primary);border:1px solid rgba(37,99,235,0.25)">Real-Time Feed</span>
+            </div>
+            <p class="text-muted small mb-0">Track customer positions, token announcements, and station wait estimates.</p>
+          </div>
+        </div>
+
+        <!-- My Token Display Hero Pill -->
+        <div id="my-token-hero">
+          <div class="loading-dots" style="display:inline-flex"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+
+      <!-- Left: Full Queue Board -->
+      <div class="col-lg-8">
+
+        <!-- Now Serving Card -->
+        <div class="fb-feed-card p-3 mb-4" style="border-left: 4px solid var(--be-primary);">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+              <div class="text-muted small text-uppercase fw-bold" style="letter-spacing:1px">
+                <i class="fa-solid fa-bullhorn text-primary me-1"></i> Now Calling / Serving
+              </div>
+              <div class="now-serving-token text-primary" id="now-serving-token" style="font-size:2.2rem;font-weight:900;letter-spacing:2px">—</div>
+            </div>
+            <div class="text-center px-3" style="border-left:1px solid var(--be-border);border-right:1px solid var(--be-border)">
+              <div class="text-muted small">Chairs Available</div>
+              <div class="fw-bold fs-3 text-dark" id="ns-chairs">—</div>
+            </div>
+            <div class="text-center">
+              <div class="text-muted small">Total in Queue</div>
+              <div class="fw-bold fs-3 text-dark" id="ns-queue-count">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Queue Board Feed Card -->
+        <div class="fb-feed-card">
+          <div class="fb-feed-header">
+            <div class="fw-bold d-flex align-items-center gap-2 text-dark">
+              <i class="fa-solid fa-list-ol" style="color:var(--be-primary)"></i>
+              Queue Table (First-Come, First-Served)
+            </div>
+            <div class="ws-indicator">
+              <span class="ws-dot connected" id="queue-ws-dot"></span>
+              <span style="font-size:0.75rem;color:var(--be-text)" id="queue-ws-label">Live</span>
+            </div>
+          </div>
+
+          <!-- Queue Table Header -->
+          <div class="d-flex align-items-center px-3 py-2"
+            style="border-bottom:1px solid var(--be-border);font-size:0.75rem;color:var(--be-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:var(--be-card)">
+            <div style="width:48px">#</div>
+            <div style="flex:1">Customer</div>
+            <div style="width:120px">Service</div>
+            <div style="width:90px;text-align:right">Est. Wait</div>
+            <div style="width:90px;text-align:right">Status</div>
+          </div>
+
+          <div id="queue-board-list" style="min-height:200px">
+            <div class="text-center py-5 text-muted">
+              <div class="loading-dots" style="display:inline-flex"><span></span><span></span><span></span></div>
+              <p class="mt-2 small">Loading queue…</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: My Position + Actions -->
+      <div class="col-lg-4">
+
+        <!-- My Queue Card -->
+        <div class="fb-feed-card mb-3" id="my-queue-card">
+          <div class="fb-feed-header">
+            <div class="fw-bold d-flex align-items-center gap-2 text-dark">
+              <i class="fa-solid fa-star" style="color:var(--be-primary)"></i>
+              My Queue Status
+            </div>
+          </div>
+          <div class="p-3" id="my-queue-body">
+            <div class="text-center py-3 text-muted small">Loading…</div>
+          </div>
+        </div>
+
+        <!-- Join Queue Card -->
+        <div class="fb-feed-card mb-3">
+          <div class="fb-feed-header">
+            <div class="fw-bold d-flex align-items-center gap-2 text-dark">
+              <i class="fa-solid fa-plus" style="color:var(--be-primary)"></i>
+              Join Waiting Queue
+            </div>
+          </div>
+          <div class="p-3">
+            <form onsubmit="joinFromQueuePage(event)">
+              <label class="form-label small text-muted mb-1">Select Service</label>
+              <select class="form-select mb-3" id="qp-service" required>
+                <option value="" disabled selected>Select a service…</option>
+              </select>
+
+              <button type="submit" class="fb-btn-primary w-100 py-2">
+                <i class="fa-solid fa-ticket me-2"></i>Get My Token
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Queue Rules -->
+        <div class="fb-feed-card">
+          <div class="p-3">
+            <div class="fw-bold small mb-2" style="color:var(--be-muted);text-transform:uppercase;letter-spacing:0.5px">
+              Queue Rules
+            </div>
+            <ul class="text-muted small ps-3 mb-0">
+              <li class="mb-1">First-come, first-served (FIFO)</li>
+              <li class="mb-1">If called and not present within <strong class="text-dark">5 min</strong>, you'll be skipped</li>
+              <li class="mb-1">You can leave the queue at any time</li>
+              <li class="mb-1">Chair is auto-assigned when it's your turn</li>
+              <li>Notifications sent via dashboard & browser alert</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    checkAuth('customer');
+
+    const authToken = localStorage.getItem('barber_token');
+    const currentUser = JSON.parse(localStorage.getItem('barber_user'));
+
+    function showToast(msg, type = 'success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast align-items-center text-white bg-${type} border-0 show`;
+      t.setAttribute('role', 'alert');
+      t.innerHTML = `<div class="d-flex"><div class="toast-body"><i class="fa-solid fa-circle-info me-2"></i>${msg}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+
+    // ── Load services ──
+    async function loadServices() {
+      const res = await fetch('/api/services');
+      const data = await res.json();
+      if (res.ok && data.data) {
+        const sel = document.getElementById('qp-service');
+        data.data.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = `${s.name} ($${parseFloat(s.price).toFixed(2)})`;
+          opt.setAttribute('data-duration', s.duration_minutes);
+          sel.appendChild(opt);
+        });
+      }
+    }
+
+    // ── Load full queue ──
+    async function loadQueue() {
+      try {
+        const res = await fetch('/api/queue', { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const data = await res.json();
+        const rawList = data.data || [];
+        const list = rawList.filter(q => {
+          const s = (q.status || '').toLowerCase();
+          return s === 'waiting' || s === 'called' || s === 'serving';
+        });
+
+        // Separate serving/called vs waiting
+        const servingEntry = list.find(q => {
+          const s = (q.status || '').toLowerCase();
+          return s === 'serving' || s === 'called';
+        });
+        const waitingList = list.filter(q => (q.status || '').toLowerCase() === 'waiting');
+
+        document.getElementById('ns-queue-count').textContent = waitingList.length;
+
+        // Now serving token — shows whoever is actively being served
+        document.getElementById('now-serving-token').textContent = servingEntry
+          ? (servingEntry.token_number || '—')
+          : (waitingList[0]?.token_number || '—');
+
+        // Chairs count
+        const chairsRes = await fetch('/api/chairs');
+        const chairsData = await chairsRes.json();
+        const available = (chairsData.data || []).filter(c => c.status === 'available').length;
+        document.getElementById('ns-chairs').textContent = available;
+
+        // Board list — show waiting queue only (serving shown in banner)
+        const boardEl = document.getElementById('queue-board-list');
+        if (waitingList.length === 0 && !servingEntry) {
+          boardEl.innerHTML = `<div class="text-center py-5 text-muted">
+            <i class="fa-solid fa-users fa-2x text-secondary d-block mb-2"></i>
+            <p class="small">Queue is empty — all chairs are free! <a href="/customer/dashboard.html" class="text-primary fw-semibold">Book a chair</a></p>
+          </div>`;
+        } else {
+          const displayList = servingEntry ? [servingEntry, ...waitingList] : waitingList;
+          boardEl.innerHTML = displayList.map((q, i) => {
+            const isYou = currentUser && (q.customer_id === currentUser.id || (q.customer && q.customer.id === currentUser.id));
+            const dur = q.estimated_wait_minutes != null && q.estimated_wait_minutes > 0 ? q.estimated_wait_minutes : (i * 30);
+            const st = (q.status || 'waiting').toLowerCase();
+            const isServing = st === 'serving' || st === 'called';
+            const statusBadge = isServing
+              ? `<span class="badge" style="background:rgba(37,99,235,0.12);color:#2563eb;font-weight:700;border:1px solid rgba(37,99,235,0.3)">IN SERVICE</span>`
+              : `<span class="badge" style="background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0">WAITING</span>`;
+            const chairBadge = isServing && (q.chair?.chair_number || q.chair_id)
+              ? `<span class="badge" style="background:rgba(5,150,105,0.1);color:#059669;font-size:0.68rem;margin-left:6px;border:1px solid rgba(5,150,105,0.25)">Chair ${q.chair?.chair_number || q.chair_id}</span>`
+              : '';
+            return `<div class="d-flex align-items-center px-3 py-3"
+              style="${isYou ? 'background:rgba(37,99,235,0.06);border-left:3px solid var(--be-primary)' : (isServing ? 'background:rgba(37,99,235,0.04);' : 'border-bottom:1px solid var(--be-border)')}">
+              <div style="width:48px">
+                <span class="position-badge" style="width:28px;height:28px;font-size:0.75rem;background:${isServing ? 'var(--be-primary)' : isYou ? 'var(--be-primary)' : '#f1f5f9'};color:${isServing || isYou ? '#ffffff' : '#64748b'};border:1px solid ${isServing || isYou ? 'var(--be-primary)' : '#e2e8f0'}">
+                  ${isServing ? '<i class="fa-solid fa-scissors" style="font-size:0.6rem"></i>' : i + (servingEntry ? 0 : 1)}
+                </span>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:0.88rem;font-weight:600;color:var(--be-text)">
+                  ${isServing ? '✂️ Now Serving' : (isYou ? '⭐ You' : maskName(q.customer?.name))}
+                  ${chairBadge}
+                </div>
+                <div style="font-size:0.73rem;color:var(--be-muted)">${q.token_number || 'Q-' + String(i+1).padStart(3,'0')}</div>
+              </div>
+              <div style="width:120px;font-size:0.8rem;color:var(--be-muted)">${q.service?.name || 'Haircut'}</div>
+              <div style="width:90px;text-align:right;font-size:0.8rem;color:var(--be-text);font-weight:600">${isServing ? '— Active' : (i === (servingEntry ? 1 : 0) ? 'Next up' : '~' + dur + ' min')}</div>
+              <div style="width:90px;text-align:right">${statusBadge}</div>
+            </div>`;
+          }).join('');
+        }
+
+        // My entry (fetch directly or fallback to list)
+        let myEntry = null;
+        try {
+          const myRes = await fetch('/api/queue/my-status', { headers: { 'Authorization': `Bearer ${authToken}` } });
+          const myData = await myRes.json();
+          if (myRes.ok && myData.data) {
+            myEntry = myData.data;
+          }
+        } catch (e) {}
+
+        if (!myEntry) {
+          myEntry = list.find(q => currentUser && (q.customer_id === currentUser.id || (q.customer && q.customer.id === currentUser.id)));
+        }
+
+        if (myEntry) {
+          const isDismissed = sessionStorage.getItem('dismissed_queue_' + myEntry.id);
+          const s = (myEntry.status || '').toLowerCase();
+          if (isDismissed && (s === 'completed' || s === 'served')) {
+            myEntry = null;
+          }
+        }
+
+        const myIdx = waitingList.findIndex(q => currentUser && (q.customer_id === currentUser.id || (q.customer && q.customer.id === currentUser.id)));
+        renderMyQueueCard(myEntry, myIdx >= 0 ? myIdx + 1 : (myEntry ? 0 : -1));
+        renderHeroToken(myEntry);
+
+      } catch (e) {
+        console.error('Queue load error:', e);
+      }
+    }
+
+    function maskName(name) {
+      if (!name) return 'Customer';
+      const p = name.split(' ');
+      return p[0][0] + '***' + (p.length > 1 ? ' ' + p[p.length-1][0] + '.' : '');
+    }
+
+    function dismissCompletedQueueAndGetNext(id) {
+      if (id) sessionStorage.setItem('dismissed_queue_' + id, 'true');
+      if (window._servedDismissTimer) {
+        clearTimeout(window._servedDismissTimer);
+        window._servedDismissTimer = null;
+      }
+      if (window._servedInterval) {
+        clearInterval(window._servedInterval);
+        window._servedInterval = null;
+      }
+      loadQueue();
+      const sel = document.getElementById('qp-service');
+      if (sel) sel.focus();
+    }
+    window.dismissCompletedQueueAndGetNext = dismissCompletedQueueAndGetNext;
+
+    function renderHeroToken(myEntry) {
+      const el = document.getElementById('my-token-hero');
+      if (!el) return;
+      if (!myEntry) {
+        el.innerHTML = `<div class="text-muted small">You are not in the queue.</div>`;
+        return;
+      }
+      const st = (myEntry.status || 'waiting').toLowerCase();
+      let subtitle = '';
+      if (st === 'called') {
+        subtitle = `<i class="fa-solid fa-volume-high me-1 text-warning"></i><strong class="text-warning">Called to Chair ${myEntry.chair?.chair_number || '1'}</strong>`;
+      } else if (st === 'serving' || st === 'seated') {
+        subtitle = `<i class="fa-solid fa-scissors me-1" style="color:var(--be-primary)"></i><strong style="color:var(--be-primary)">Seated in Chair ${myEntry.chair?.chair_number || '1'}</strong>`;
+      } else if (st === 'completed' || st === 'served') {
+        subtitle = `<i class="fa-solid fa-circle-check me-1" style="color:#059669"></i><strong style="color:#059669">Served & Complete</strong>`;
+      } else {
+        subtitle = `In Queue <strong class="text-dark">#${myEntry.position || 1}</strong> · Est. wait <strong style="color:var(--be-primary)">${myEntry.estimated_wait_minutes > 0 ? myEntry.estimated_wait_minutes : 30} min</strong>`;
+      }
+      el.innerHTML = `
+        <div class="token-number" style="font-size:2rem;color:var(--be-primary)">${myEntry.token_number || 'Q-001'}</div>
+        <div class="text-muted small mt-1">${subtitle}</div>`;
+    }
+
+    function renderMyQueueCard(entry, pos) {
+      const body = document.getElementById('my-queue-body');
+      if (!body) return;
+      if (!entry) {
+        body.innerHTML = `<div class="text-center py-3">
+          <p class="text-muted small mb-2">You are not in the queue</p>
+          <a href="/customer/dashboard.html" class="btn btn-sm btn-outline-secondary fw-bold">← Back to Dashboard</a>
+        </div>`;
+        return;
+      }
+
+      // Map backend statuses to step index: Waiting (0) → Called (1) → Seated (2) → Served (3)
+      const st = (entry.status || 'waiting').toLowerCase();
+      const statusToStep = { 'waiting': 0, 'called': 1, 'serving': 2, 'seated': 2, 'completed': 3, 'served': 3 };
+      const statIdx = statusToStep[st] ?? 0;
+
+      const steps = [
+        { label: 'Waiting', icon: 'fa-clock' },
+        { label: 'Called',  icon: 'fa-volume-high' },
+        { label: 'Seated',  icon: 'fa-scissors' },
+        { label: 'Served',  icon: 'fa-circle-check' }
+      ];
+
+      const stepsHtml = steps.map((step, i) => {
+        const isDone   = i < statIdx;
+        const isActive = i === statIdx;
+        return `${i > 0 ? `<div class="queue-step-connector ${isDone ? 'done' : ''}"></div>` : ''}
+          <div class="queue-step">
+            <div class="queue-step-circle ${isDone ? 'done' : isActive ? 'active' : ''}">
+              ${isDone ? '<i class="fa-solid fa-check" style="font-size:0.65rem"></i>' : (isActive ? `<i class="fa-solid ${step.icon}" style="font-size:0.65rem"></i>` : (i + 1))}
+            </div>
+            <div class="queue-step-label ${isDone ? 'done' : isActive ? 'active' : ''}">${step.label}</div>
+          </div>`;
+      }).join('');
+
+      // Status badge colour
+      const statusColor  = (st === 'serving' || st === 'seated') ? '#2563eb'
+                         : (st === 'completed' || st === 'served') ? '#059669'
+                         : st === 'called'    ? '#d97706'
+                         : '#64748b';
+      const statusLabel  = (st === 'serving' || st === 'seated') ? 'Seated'
+                         : (st === 'completed' || st === 'served') ? 'Served'
+                         : st === 'called'    ? 'Called'
+                         : 'Waiting';
+
+      const chairBadge = entry.chair
+        ? `<span style="font-size:0.75rem;color:var(--be-muted)">· Station <strong class="text-dark">${entry.chair.chair_number}</strong></span>`
+        : '';
+
+      // Position display
+      const posDisplay = (st === 'serving' || st === 'seated' || st === 'called')
+        ? `<div class="fw-bold text-primary" style="font-size:1.1rem">Chair ${entry.chair?.chair_number || '1'}</div><div class="text-muted" style="font-size:0.7rem">Station</div>`
+        : (st === 'completed' || st === 'served')
+          ? `<div class="fw-bold text-success" style="font-size:1.1rem">✓ Done</div><div class="text-muted" style="font-size:0.7rem">Complete</div>`
+          : `<div class="fw-bold text-dark">${pos > 0 ? pos : (entry.position || 1)}</div><div class="text-muted" style="font-size:0.7rem">Position</div>`;
+
+      const waitDisplay = (st === 'serving' || st === 'seated')
+        ? `<div class="fw-bold text-primary">Active ✂️</div><div class="text-muted" style="font-size:0.7rem">Now</div>`
+        : (st === 'called')
+          ? `<div class="fw-bold text-warning">Now!</div><div class="text-muted" style="font-size:0.7rem">Proceed</div>`
+          : (st === 'completed' || st === 'served')
+            ? `<div class="fw-bold text-success">Finished</div><div class="text-muted" style="font-size:0.7rem">Complete</div>`
+            : `<div class="fw-bold text-primary">${entry.estimated_wait_minutes > 0 ? entry.estimated_wait_minutes + 'm' : '~30m'}</div><div class="text-muted" style="font-size:0.7rem">Est. Wait</div>`;
+
+      // Status-specific banner
+      let alertBanner = '';
+      if (st === 'called') {
+        alertBanner = `<div class="p-2 mb-3 rounded text-center" style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:0.83rem">
+          <i class="fa-solid fa-bell me-1"></i><strong>Your Token is Called!</strong><br/>Please proceed to <strong>Chair ${entry.chair?.chair_number || '1'}</strong>.
+        </div>`;
+      } else if (st === 'serving' || st === 'seated') {
+        alertBanner = `<div class="p-2 mb-3 rounded text-center" style="background:#eff6ff;border:1px solid #3b82f6;color:#1e40af;font-size:0.83rem">
+          <i class="fa-solid fa-scissors me-1"></i><strong>Service In Progress</strong> at Chair ${entry.chair?.chair_number || '1'}.
+        </div>`;
+      } else if (st === 'completed' || st === 'served') {
+        alertBanner = `<div class="p-3 mb-3 rounded text-center" style="background:#ecfdf5;border:1px solid #10b981;color:#065f46">
+          <div class="fw-bold mb-1" style="font-size:0.95rem"><i class="fa-solid fa-circle-check text-success me-1"></i>Service Complete & Served!</div>
+          <div class="small text-muted mb-2">Chair is now free. Thank you for visiting BarberEase!</div>
+          <div class="progress mb-2" style="height:5px;background:rgba(16,185,129,0.2);border-radius:3px;overflow:hidden">
+            <div id="q-served-progress-bar" class="progress-bar bg-success" style="width:100%;transition:width 3.5s linear"></div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center" style="font-size:0.75rem">
+            <span class="text-muted"><i class="fa-solid fa-clock-rotate-left me-1"></i>Clearing in <strong id="q-served-countdown">4</strong>s…</span>
+            <button class="btn btn-sm btn-link p-0 text-success fw-bold text-decoration-none" onclick="dismissCompletedQueueAndGetNext(${entry.id})">Get Next Token Now →</button>
+          </div>
+        </div>`;
+
+        // Automatically clear served card after 3.8 seconds so user advances to next token
+        if (!window._servedDismissTimer) {
+          let count = 4;
+          setTimeout(() => {
+            const bar = document.getElementById('q-served-progress-bar');
+            if (bar) bar.style.width = '0%';
+          }, 50);
+
+          window._servedInterval = setInterval(() => {
+            count--;
+            const countEl = document.getElementById('q-served-countdown');
+            if (countEl) countEl.textContent = Math.max(0, count);
+            if (count <= 0) {
+              clearInterval(window._servedInterval);
+              window._servedInterval = null;
+            }
+          }, 950);
+
+          window._servedDismissTimer = setTimeout(() => {
+            sessionStorage.setItem('dismissed_queue_' + entry.id, 'true');
+            window._servedDismissTimer = null;
+            dismissCompletedQueueAndGetNext(entry.id);
+          }, 3800);
+        }
+      }
+
+      const canLeave = st === 'waiting';
+
+      body.innerHTML = `
+        <div class="text-center mb-3">
+          <div class="token-number" style="font-size:2.2rem;color:var(--be-primary)">${entry.token_number || 'Q-00' + (pos > 0 ? pos : 1)}</div>
+          <div class="token-label">Queue Token</div>
+          ${chairBadge}
+        </div>
+        <div class="queue-progress mb-3">${stepsHtml}</div>
+        ${alertBanner}
+        <div class="row g-2 mb-3 text-center">
+          <div class="col-6">
+            <div class="p-2 rounded" style="background:#f8fafc;border:1px solid var(--be-border)">
+              ${posDisplay}
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-2 rounded" style="background:#f8fafc;border:1px solid var(--be-border)">
+              ${waitDisplay}
+            </div>
+          </div>
+        </div>
+        <div class="mb-3 p-2 rounded" style="background:#f8fafc;border:1px solid var(--be-border);font-size:0.82rem">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted">Service</span>
+            <span class="fw-semibold text-dark">${entry.service?.name || '—'}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">Status</span>
+            <span class="badge" style="background:${statusColor}20;color:${statusColor};border:1px solid ${statusColor}40;font-weight:700">${statusLabel}</span>
+          </div>
+        </div>
+        ${canLeave ? `<button class="btn btn-outline-secondary btn-sm w-100 fw-bold" onclick="leaveQueue(${entry.id})">
+          <i class="fa-solid fa-circle-xmark me-1"></i>Leave Queue
+        </button>` : (st === 'completed' || st === 'served' ? `<button class="btn btn-primary btn-sm w-100 fw-bold" onclick="dismissCompletedQueueAndGetNext(${entry.id})">
+          <i class="fa-solid fa-ticket me-1"></i>Get Next Token
+        </button>` : '')}`;
+    }
+    }
+
+    async function joinFromQueuePage(event) {
+      event.preventDefault();
+      const serviceId = document.getElementById('qp-service').value;
+      const btn = event.submitter;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span>';
+      try {
+        const res = await fetch('/api/queue/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ service_id: serviceId })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to join queue.');
+        showToast('🎟️ Token issued! You\'re in the queue.', 'success');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-ticket me-2"></i>Get My Token';
+        loadQueue();
+      } catch (e) {
+        showToast(e.message, 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-ticket me-2"></i>Get My Token';
+      }
+    }
+
+    async function leaveQueue(queueId) {
+      if (!confirm('Are you sure you want to leave the queue?')) return;
+      try {
+        const res = await fetch(`/api/queue/${queueId}/cancel`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) { showToast('You have left the queue.', 'success'); loadQueue(); }
+        else { const d = await res.json(); throw new Error(d.message); }
+      } catch (e) { showToast(e.message, 'danger'); }
+    }
+
+    // ── WebSocket ──
+    function setupQueueWS() {
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+        ws.onopen = () => {
+          document.getElementById('queue-ws-dot').classList.add('connected');
+          document.getElementById('queue-ws-label').textContent = 'Live';
+        };
+        ws.onmessage = (e) => {
+          const d = JSON.parse(e.data);
+          if (d.event === 'queue-update' || d.event === 'chair-update' || d.event === 'appointment-update') loadQueue();
+        };
+        ws.onclose = () => {
+          document.getElementById('queue-ws-dot').classList.remove('connected');
+          document.getElementById('queue-ws-label').textContent = 'Polling';
+          setInterval(loadQueue, 8000);
+        };
+      } catch (e) { setInterval(loadQueue, 8000); }
+    }
+
+    loadServices();
+    loadQueue();
+    setupQueueWS();
+    setInterval(loadQueue, 15000);
+  </script>
+</body>
+</html>

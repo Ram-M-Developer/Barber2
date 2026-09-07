@@ -86,6 +86,25 @@ public class AppointmentController {
         return ResponseEntity.ok(body);
     }
 
+    @GetMapping("/slots")
+    public ResponseEntity<Map<String, Object>> getSlots(
+            @RequestParam(name = "chairId", required = false) Long chairId,
+            @RequestParam(name = "date", required = false) String dateStr) {
+        
+        LocalDate date = (dateStr != null && !dateStr.isEmpty()) ? LocalDate.parse(dateStr) : LocalDate.now();
+        List<String> bookedSlots = appointmentService.getBookedSlots(chairId, date);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("chairId", chairId);
+        data.put("date", date.toString());
+        data.put("bookedSlots", bookedSlots);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("data", data);
+        return ResponseEntity.ok(body);
+    }
+
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAll(
             @RequestParam(required = false) String date,

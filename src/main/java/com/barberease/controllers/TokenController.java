@@ -22,7 +22,7 @@ public class TokenController {
 
     @GetMapping("/{number}")
     public ResponseEntity<Map<String, Object>> getByNumber(@PathVariable String number) {
-        Token token = tokenRepository.findByTokenNumber(number)
+        Token token = tokenRepository.findFirstByTokenNumberOrderByIdDesc(number)
                 .orElseThrow(() -> new IllegalArgumentException("Token not found"));
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

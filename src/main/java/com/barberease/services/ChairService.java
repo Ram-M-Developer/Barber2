@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import com.barberease.repositories.AppointmentRepository;
+import com.barberease.repositories.QueueRepository;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,12 +30,44 @@ public class ChairService {
     private CustomerRepository customerRepository;
 
     @Autowired
+    private AppointmentRepository appointmentRepository;
+
+    @Autowired
+    private QueueRepository queueRepository;
+
+    @Autowired
     private BarberWebSocketHandler webSocketHandler;
 
     @Value("${app.reservation-timeout-ms}")
     private long reservationTimeoutMs;
 
+    public void reconcileChairStatuses() {
+        List<Chair> chairs = chairRepository.findAll();
+        boolean changed = false;
+        for (Chair chair : chairs) {
+            if ("occupied".equals(chair.getStatus())) {
+                boolean hasActiveAppt = appointmentRepository.findByChairId(chair.getId()).stream()
+                        .anyMatch(a -> "in_progress".equals(a.getStatus()));
+                boolean hasActiveQueue = queueRepository.findByChairIdAndStatusInOrderByPositionAsc(
+                        chair.getId(), Arrays.asList("serving", "called")).stream()
+                        .findAny().isPresent();
+
+                if (!hasActiveAppt && !hasActiveQueue) {
+                    chair.setStatus("available");
+                    chair.setReservedByCustomer(null);
+                    chair.setReservedAt(null);
+                    chairRepository.save(chair);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            webSocketHandler.broadcast("chair-update");
+        }
+    }
+
     public List<Chair> getAllChairs() {
+        reconcileChairStatuses();
         return chairRepository.findByIsActiveTrueOrderByChairNumberAsc();
     }
 
@@ -42,6 +77,7 @@ public class ChairService {
     }
 
     public List<Chair> getAvailableChairs() {
+        reconcileChairStatuses();
         return chairRepository.findByStatusAndIsActiveTrueOrderByChairNumberAsc("available");
     }
 
@@ -99,6 +135,8 @@ public class ChairService {
             System.out.println("⏰ Cleaned up " + expired.size() + " expired chair reservations.");
             webSocketHandler.broadcast("chair-update");
         }
+
+        reconcileChairStatuses();
     }
 
     public Chair reserveChair(Long chairId, Long customerId) {
@@ -106,11 +144,10 @@ public class ChairService {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
 
-        if (!"available".equals(chair.getStatus()) || !chair.isActive()) {
-            throw new IllegalStateException("Chair is no longer available");
+        if (!chair.isActive() || "maintenance".equals(chair.getStatus())) {
+            throw new IllegalStateException("Chair station is currently under maintenance.");
         }
 
-        chair.setStatus("reserved");
         chair.setReservedByCustomer(customer);
         chair.setReservedAt(LocalDateTime.now());
 

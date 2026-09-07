@@ -3,110 +3,347 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Customer Dashboard — BarberEase</title>
+  <title>Dashboard — BarberEase</title>
+  <meta name="description" content="Manage your barber appointments, view live seat availability, and track your queue position.">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
-</head>
-<body style="background-color: var(--be-dark);">
+  <style>
+    body { background-color: var(--be-dark); }
 
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow">
-    <div class="container">
-      <a class="navbar-brand fw-bold" href="/customer/dashboard.html">
-        <i class="fa-solid fa-scissors text-danger me-2"></i>BarberEase <span class="badge bg-danger ms-1 fs-7">Customer</span>
+    /* Facebook Navigation Customizations */
+    .dash-tabs {
+      display: flex;
+      gap: 6px;
+      background: var(--be-card);
+      border: 1px solid var(--be-border);
+      border-radius: 8px;
+      padding: 6px;
+      margin-bottom: 1.5rem;
+    }
+    .dash-tab {
+      flex: 1;
+      padding: 0.55rem 0.75rem;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--be-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--be-transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .dash-tab.active {
+      background: var(--be-primary);
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(24, 119, 242, 0.4);
+    }
+    .dash-tab:not(.active):hover {
+      background: var(--be-card-hover);
+      color: var(--be-text);
+    }
+    .tab-badge {
+      background: #e41e3f;
+      color: #ffffff;
+      border-radius: 10px;
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      font-weight: 800;
+    }
+
+    /* Section Panels */
+    .dash-panel {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .dash-panel.active { display: block; }
+
+    /* Section Header Row */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--be-text);
+    }
+
+    /* Estimated wait strip */
+    .est-wait-strip {
+      background: #f1f5f9;
+      border: 1px solid var(--be-border);
+      border-radius: 6px;
+      padding: 0.55rem 0.85rem;
+      font-size: 0.82rem;
+      color: var(--be-text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    /* Booking summary box */
+    .booking-summary {
+      background: var(--be-dark);
+      border: 1px solid var(--be-border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+    }
+    .booking-summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.83rem;
+      padding: 3px 0;
+    }
+    .booking-summary-row .label { color: var(--be-muted); }
+    .booking-summary-row.total {
+      border-top: 1px solid var(--be-border);
+      margin-top: 6px;
+      padding-top: 8px;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+    .booking-summary-row.total .value { color: var(--be-primary); }
+
+    /* Appointment history item */
+    .appt-history-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      background: var(--be-dark);
+      border: 1px solid var(--be-border);
+      transition: var(--be-transition);
+      animation: slideInUp 0.3s ease both;
+    }
+    .appt-history-item:hover {
+      border-color: var(--be-border-hover);
+      background: var(--be-card-hover);
+    }
+    .appt-icon {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .appt-meta { flex: 1; min-width: 0; }
+    .appt-meta .appt-title { font-size: 0.88rem; font-weight: 600; color: var(--be-text); }
+    .appt-meta .appt-sub { font-size: 0.75rem; color: var(--be-muted); }
+
+    /* Quick action cards */
+    .quick-action {
+      background: var(--be-card);
+      border: 1px solid var(--be-border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      cursor: pointer;
+      transition: var(--be-transition);
+      text-align: center;
+      animation: slideInUp 0.4s ease both;
+    }
+    .quick-action:hover {
+      border-color: var(--be-primary);
+      background: var(--be-card-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .quick-action .qa-icon {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      margin: 0 auto 0.75rem;
+    }
+    .quick-action .qa-title { font-size: 0.88rem; font-weight: 700; color: var(--be-text); }
+    .quick-action .qa-sub { font-size: 0.73rem; color: var(--be-muted); }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ FACEBOOK TOP NAVIGATION BAR ═══ -->
+  <nav class="fb-navbar fixed-top d-flex align-items-center justify-content-between">
+    <!-- Left: Brand Logo & Search Pill -->
+    <div class="d-flex align-items-center gap-3">
+      <a class="fb-brand" href="/customer/dashboard.html">
+        <div class="fb-logo-icon">
+          <i class="fa-solid fa-scissors"></i>
+        </div>
+        <span class="d-none d-sm-inline fw-bold">BarberEase</span>
       </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#custNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="custNav">
-        <ul class="navbar-nav ms-auto align-items-center gap-2">
-          <li class="nav-item"><a class="nav-link active" href="/customer/dashboard.html">Dashboard</a></li>
-          <li class="nav-item"><a class="nav-link" href="/customer/profile.html">My Profile</a></li>
-          <li class="nav-item">
-            <button class="btn btn-outline-danger btn-sm" onclick="handleLogout()">
-              <i class="fa-solid fa-right-from-bracket me-1"></i>Logout
-            </button>
-          </li>
-        </ul>
+      <div class="fb-search-bar d-none d-md-flex">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search chairs, services..." />
       </div>
+    </div>
+
+    <!-- Center: Facebook Icon Tabs -->
+    <div class="fb-nav-center">
+      <a class="fb-nav-tab active" href="/customer/dashboard.html" title="Service Chairs">
+        <i class="fa-solid fa-chair"></i>
+      </a>
+      <a class="fb-nav-tab" href="/customer/queue.html" title="Waiting Queue">
+        <i class="fa-solid fa-users"></i>
+      </a>
+      <a class="fb-nav-tab" href="/customer/profile.html" title="Account Profile">
+        <i class="fa-solid fa-circle-user"></i>
+      </a>
+    </div>
+
+    <!-- Right: Facebook Utility Circular Buttons & Profile -->
+    <div class="fb-right-actions">
+      <!-- Live WS Indicator Pill -->
+      <span class="ws-indicator d-none d-sm-inline-flex px-2 py-1 rounded" style="background:var(--be-card-hover)">
+        <span class="ws-dot" id="ws-dot"></span>
+        <span id="ws-label" style="font-size:0.75rem;color:var(--be-text)">Live Feed</span>
+      </span>
+
+      <!-- Wallet Button -->
+      <button class="btn fb-btn-secondary d-flex align-items-center gap-2 py-1 px-3" onclick="openTopUpModal()" title="Wallet Balance">
+        <i class="fa-solid fa-wallet" style="color:var(--be-primary)"></i>
+        <span class="fw-bold" style="font-size:0.85rem">$<span id="customer-wallet-balance">0.00</span></span>
+      </button>
+
+      <!-- Queue Modal Trigger -->
+      <button class="fb-circle-btn d-none d-sm-flex" onclick="openQueueModal()" title="Join Waiting List">
+        <i class="fa-solid fa-ticket" style="color:var(--be-primary)"></i>
+      </button>
+
+      <!-- Logout Circular Button -->
+      <button class="fb-circle-btn" onclick="handleLogout()" title="Log Out">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </button>
     </div>
   </nav>
 
-  <!-- Main Container -->
-  <div class="container" style="margin-top: 100px; margin-bottom: 50px;">
-    
-    <!-- Welcome Header -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <h2 class="fw-bold">Welcome back, <span class="text-danger" id="cust-welcome-name">Customer</span>!</h2>
-        <p class="text-muted">Manage your appointments, check your live queue tokens, and reserve active chairs.</p>
-      </div>
-    </div>
+  <!-- ═══ MAIN CONTAINER ═══ -->
+  <div class="container-fluid px-3 px-md-4" style="margin-top: 72px; margin-bottom: 60px; max-width: 1400px;">
 
-    <!-- Live Status Banner -->
-    <div class="row g-4 mb-4">
-      <div class="col-md-3 col-6">
-        <div class="stat-card">
-          <div class="stat-value text-success" id="chairs-available-count">0</div>
-          <div class="stat-label">Available Chairs</div>
+    <!-- Facebook Style Welcome Header Banner -->
+    <div class="fb-feed-card p-3 mb-3">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+          <div class="fb-avatar fb-avatar-blue" style="width:48px;height:48px;font-size:1.2rem">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div>
+            <h4 class="fw-bold mb-0 text-dark">Welcome back, <span style="color:var(--be-primary)" id="cust-welcome-name">Customer</span></h4>
+            <div class="text-muted small" id="current-date-label">Saturday, 5 September 2026</div>
+          </div>
         </div>
-      </div>
-      <div class="col-md-3 col-6">
-        <div class="stat-card">
-          <div class="stat-value text-warning" id="chairs-reserved-count">0</div>
-          <div class="stat-label">Reserved Chairs</div>
-        </div>
-      </div>
-      <div class="col-md-3 col-6">
-        <div class="stat-card">
-          <div class="stat-value text-secondary" id="chairs-occupied-count">0</div>
-          <div class="stat-label">Occupied Chairs</div>
-        </div>
-      </div>
-      <div class="col-md-3 col-6">
-        <div class="stat-card position-relative">
-          <div class="stat-value text-info">$<span id="customer-wallet-balance">0.00</span></div>
-          <div class="stat-label">My Wallet Balance</div>
-          <button class="btn btn-danger btn-sm py-0 px-2 position-absolute top-0 end-0 m-2 fw-bold" onclick="openTopUpModal()" title="Top up wallet balance">
-            <i class="fa-solid fa-plus"></i> Top Up
+        <div class="d-flex gap-2">
+          <button class="fb-btn-primary" onclick="openQueueModal()">
+            <i class="fa-solid fa-ticket me-1"></i>Join Waiting List
+          </button>
+          <button class="fb-btn-secondary" onclick="openTopUpModal()">
+            <i class="fa-solid fa-plus me-1"></i>Top Up
           </button>
         </div>
       </div>
     </div>
 
+    <!-- ── Stats Banner ── -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card" style="animation-delay:0s">
+          <div class="stat-value text-primary" id="chairs-available-count">—</div>
+          <div class="stat-label">Chairs Available</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card" style="animation-delay:0.1s">
+          <div class="stat-value text-info" id="chairs-reserved-count">—</div>
+          <div class="stat-label">On Hold</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card" style="animation-delay:0.2s">
+          <div class="stat-value text-secondary" id="chairs-occupied-count">—</div>
+          <div class="stat-label">In Service</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card" style="animation-delay:0.3s">
+          <div class="stat-value text-dark" id="queue-count">—</div>
+          <div class="stat-label">In Waiting List</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LIVE TICKER ── -->
+    <div class="queue-ticker mb-4" style="border-color: var(--be-border); background: var(--be-card);">
+      <i class="fa-solid fa-circle" style="color:var(--be-primary);font-size:0.5rem;animation:pulse-blue 1.5s infinite"></i>
+      <span class="queue-ticker-text" id="queue-ticker-text" style="color: var(--be-muted);">
+        LIVE SHOP STATUS · Service Chair 1 & Service Chair 2 Active · Dedicated 3-Seat Waiting Lounge per Station · Book specific chair time slot or take a waiting seat
+      </span>
+    </div>
+
+    <!-- ── Main 3-Column Layout ── -->
     <div class="row g-4">
-      
-      <!-- LEFT: Live Chair Map & Booking -->
-      <div class="col-lg-8">
-        <div class="card card-dark h-100 shadow-sm">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-chair text-danger me-2"></i>Live Chair Grid Map</h5>
-            <span class="text-muted small">Select an available chair (🟢) to book</span>
+
+      <!-- LEFT: 2 Main Service Chairs & Waiting Lounges (col-lg-6) -->
+      <div class="col-lg-6">
+        <div class="fb-feed-card h-100">
+          <div class="fb-feed-header">
+            <div class="section-title mb-0">
+              <div class="fb-avatar fb-avatar-blue me-2" style="width:34px;height:34px;font-size:0.95rem">
+                <i class="fa-solid fa-scissors"></i>
+              </div>
+              <div>
+                <span class="fw-bold d-block text-dark" style="font-size:0.95rem">2 Main Service Stations &amp; Waiting Lounge</span>
+                <span class="text-muted small" style="font-size:0.72rem">Live Station Availability • Real-Time</span>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="ws-indicator" id="chair-ws-indicator">
+                <span class="ws-dot" id="chair-ws-dot"></span>
+                <span id="chair-ws-label" style="font-size:0.75rem">Live</span>
+              </span>
+            </div>
           </div>
-          <div class="card-body">
-            
-            <!-- Chair Legend -->
-            <div class="d-flex gap-3 justify-content-center flex-wrap mb-4 py-2 border-bottom border-secondary">
-              <span class="small"><i class="fa-solid fa-square text-success me-1"></i> Available</span>
-              <span class="small"><i class="fa-solid fa-square text-warning me-1"></i> Reserved</span>
-              <span class="small"><i class="fa-solid fa-square text-secondary me-1"></i> Occupied</span>
-              <span class="small"><i class="fa-solid fa-square text-danger me-1"></i> Maintenance</span>
+          <div class="p-3">
+
+            <!-- Legend -->
+            <div class="d-flex gap-3 flex-wrap justify-content-center mb-3 pb-2" style="border-bottom:1px solid var(--be-border)">
+              <span style="font-size:0.75rem"><i class="fa-solid fa-circle me-1" style="color:var(--be-green)"></i>Available</span>
+              <span style="font-size:0.75rem"><i class="fa-solid fa-circle me-1" style="color:#d97706"></i>On Hold</span>
+              <span style="font-size:0.75rem"><i class="fa-solid fa-circle me-1" style="color:#64748b"></i>In Service</span>
+              <span style="font-size:0.75rem"><i class="fa-solid fa-ticket me-1" style="color:var(--be-primary)"></i>Token Queue</span>
             </div>
 
-            <!-- Chair Grid -->
-            <div class="d-flex justify-content-center gap-3 flex-wrap py-3" id="live-chair-grid">
-              <!-- Dynamically populated chairs -->
+            <!-- 2 Main Service Stations with Waiting Chairs -->
+            <div id="live-chair-grid" class="service-stations-container py-1">
+              <!-- Rendered dynamically by renderChairsGrid() -->
+              <div class="skeleton" style="height:260px;border-radius:8px"></div>
+              <div class="skeleton" style="height:260px;border-radius:8px"></div>
             </div>
 
-            <div class="text-center mt-3" id="queue-alert-panel" style="display:none;">
-              <div class="alert alert-warning py-3">
-                <i class="fa-solid fa-circle-exclamation me-2"></i>All chairs are currently occupied or reserved. You can join the digital queue to receive a token number.
-                <div class="mt-2">
-                  <button class="btn btn-danger btn-sm px-4 fw-bold" onclick="openQueueModal()">
-                    Join Digital Queue
-                  </button>
+            <!-- Queue Alert (when both chairs full) -->
+            <div id="queue-alert-panel" style="display:none;" class="mt-3">
+              <div style="background:#f1f5f9;border:1px solid var(--be-border);border-radius:8px;padding:0.9rem">
+                <div class="d-flex align-items-start gap-2 mb-2">
+                  <i class="fa-solid fa-circle-info text-primary mt-1"></i>
+                  <div>
+                    <div class="fw-bold small text-dark">All Stations are Currently In Service</div>
+                    <div class="text-muted" style="font-size:0.78rem">Join the digital waiting queue — you'll be assigned to the first free chair automatically when your token is called.</div>
+                  </div>
                 </div>
+                <button class="fb-btn-primary w-100" onclick="openQueueModal()">
+                  <i class="fa-solid fa-ticket me-1"></i>Join Waiting Queue
+                </button>
               </div>
             </div>
 
@@ -114,110 +351,277 @@
         </div>
       </div>
 
-      <!-- RIGHT: My Active Token / Appointment Details -->
-      <div class="col-lg-4">
-        <div class="card card-dark h-100 shadow-sm">
-          <div class="card-header">
-            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-ticket text-danger me-2"></i>My Session / Token</h5>
-          </div>
-          <div class="card-body d-flex flex-column justify-content-center text-center" id="session-panel">
-            <!-- Dynamically populated user booking/queue status -->
-            <div class="py-5 text-muted">
-              <i class="fa-regular fa-calendar-check display-3 text-secondary mb-3"></i>
-              <p>You have no active appointments or queue tokens for today.</p>
-              <p class="small">Click an available chair on the left map to book your appointment!</p>
+      <!-- CENTER: My Session / Token (col-lg-3) -->
+      <div class="col-lg-3">
+        <!-- Tabs -->
+        <div class="dash-tabs mb-0">
+          <button class="dash-tab active" id="tab-session" onclick="switchTab('session')">
+            <i class="fa-solid fa-ticket"></i> My Session
+          </button>
+          <button class="dash-tab" id="tab-queue" onclick="switchTab('queue')">
+            <i class="fa-solid fa-list-ol"></i> Queue
+            <span class="tab-badge" id="queue-tab-badge" style="display:none">0</span>
+          </button>
+          <button class="dash-tab" id="tab-history" onclick="switchTab('history')">
+            <i class="fa-solid fa-clock-rotate-left"></i> History
+          </button>
+        </div>
+
+        <!-- Session Panel -->
+        <div class="dash-panel active fb-feed-card" id="panel-session" style="border-radius:0 0 8px 8px">
+          <div class="p-3" id="session-panel">
+            <div class="py-4 text-center text-muted">
+              <i class="fa-regular fa-calendar-check display-4 text-secondary mb-3 d-block" style="animation:float 3s ease-in-out infinite"></i>
+              <p class="fw-bold text-dark mb-1">No active booking</p>
+              <p class="small text-muted mb-3">Select an available Main Service Chair to schedule an appointment, or join a waiting lounge.</p>
+              <div class="row g-2 mt-2">
+                <div class="col-6">
+                  <div class="quick-action" onclick="showChairHelp()">
+                    <div class="qa-icon" style="background:rgba(37,99,235,0.1)">
+                      <i class="fa-solid fa-chair" style="color:var(--be-primary)"></i>
+                    </div>
+                    <div class="qa-title text-dark">Book Chair</div>
+                    <div class="qa-sub">Select Station</div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="quick-action" onclick="openQueueModal()">
+                    <div class="qa-icon" style="background:#f1f5f9">
+                      <i class="fa-solid fa-ticket" style="color:var(--be-primary)"></i>
+                    </div>
+                    <div class="qa-title text-dark">Wait List</div>
+                    <div class="qa-sub">Take a seat</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+
+        <!-- Queue Position Tracker Panel -->
+        <div class="dash-panel fb-feed-card" id="panel-queue" style="border-radius:0 0 8px 8px">
+          <div class="p-3">
+            <div class="section-title mb-3">
+              <i class="fa-solid fa-users-line" style="color:var(--be-primary)"></i>
+              Live Waiting List
+            </div>
+
+            <!-- Est wait strip -->
+            <div class="est-wait-strip" id="est-wait-strip">
+              <i class="fa-solid fa-clock"></i>
+              <span id="est-wait-text">Estimated wait: calculating…</span>
+            </div>
+
+            <!-- Waiting list -->
+            <div id="waiting-list-container" style="min-height:100px">
+              <div class="text-center text-muted py-3 small">
+                <div class="loading-dots" style="display:inline-block"><span></span><span></span><span></span></div>
+                <p class="mt-2">Loading queue…</p>
+              </div>
+            </div>
+
+            <div class="mt-3 pt-2" style="border-top:1px solid var(--be-border)">
+              <button class="fb-btn-primary w-100" onclick="openQueueModal()">
+                <i class="fa-solid fa-plus me-1"></i>Join Waiting List
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Panel -->
+        <div class="dash-panel fb-feed-card" id="panel-history" style="border-radius:0 0 8px 8px">
+          <div class="p-3">
+            <div class="section-title mb-3">
+              <i class="fa-solid fa-clock-rotate-left" style="color:var(--be-primary)"></i>
+              Recent Appointments
+            </div>
+            <div id="history-list">
+              <div class="text-center py-4 text-muted small">
+                <i class="fa-regular fa-folder-open display-5 d-block mb-2 text-secondary"></i>
+                No history yet
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Queue Position Tracker (col-lg-3) -->
+      <div class="col-lg-3">
+        <div class="fb-feed-card h-100">
+          <div class="fb-feed-header">
+            <div class="section-title mb-0">
+              <div class="fb-avatar fb-avatar-blue me-2" style="width:32px;height:32px;font-size:0.9rem">
+                <i class="fa-solid fa-map-pin"></i>
+              </div>
+              <span class="fw-bold text-dark">Queue Position</span>
+            </div>
+          </div>
+          <div class="p-3 d-flex flex-column" id="queue-tracker-panel">
+            <!-- Will be filled by renderQueueTracker() -->
+            <div class="text-center text-muted py-4">
+              <i class="fa-solid fa-circle-question display-4 text-secondary d-block mb-2"></i>
+              <p class="small">Not in queue</p>
+              <p class="text-muted" style="font-size:0.75rem">Join the queue or book a chair to see your position here.</p>
+            </div>
         </div>
       </div>
 
     </div>
-
   </div>
 
-  <!-- Booking Modal -->
+  <!-- ═══════════════════════════════════════════════════════════════
+       MODALS
+  ════════════════════════════════════════════════════════════════ -->
+
+  <!-- ── Booking Modal ── -->
   <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-dark text-white border-secondary">
-        <div class="modal-header border-secondary">
-          <h5 class="modal-title fw-bold" id="bookingModalLabel">Book Appointment</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content be-modal">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">
+            <i class="fa-solid fa-calendar-plus me-2" style="color:var(--be-primary)"></i>
+            Book Appointment — <span id="booking-chair-name-title">Chair</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="alert alert-info py-2 small">
-            <i class="fa-solid fa-clock me-1"></i>Temporary Reservation: Chair is reserved for <strong id="timer-display">5:00</strong> minutes. Confirm booking to finalize.
+
+          <!-- Countdown timer alert -->
+          <div class="d-flex align-items-center gap-3 p-3 rounded mb-3"
+            style="background:#f1f5f9;border:1px solid var(--be-border)">
+            <div class="countdown-timer-wrap flex-shrink-0">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#e2e8f0" stroke-width="6"/>
+                <circle id="countdown-circle" cx="40" cy="40" r="34" fill="none"
+                  stroke="var(--be-primary)" stroke-width="6"
+                  stroke-dasharray="213.6" stroke-dashoffset="0"
+                  stroke-linecap="round"/>
+              </svg>
+              <div class="countdown-timer-text" id="timer-display" style="color:var(--be-text)">5:00</div>
+            </div>
+            <div>
+              <div class="fw-bold small text-dark">Temporary Reservation Hold Active</div>
+              <div class="text-muted" style="font-size:0.78rem">This station chair is held exclusively for you. Please finalize your slot booking before the timer expires.</div>
+            </div>
           </div>
-          
-          <form onsubmit="confirmBooking(event)">
+
+          <form onsubmit="confirmBooking(event)" id="bookingForm">
             <input type="hidden" id="booking-chair-id">
-            
-            <div class="mb-3">
-              <label class="form-label text-muted">Selected Chair</label>
-              <input type="text" class="form-control bg-dark border-secondary text-white" id="booking-chair-name" readonly>
-            </div>
 
-            <div class="mb-3">
-              <label for="booking-service" class="form-label">Grooming Service</label>
-              <select class="form-select bg-dark border-secondary text-white" id="booking-service" required onchange="calculateBookingSummary()">
-                <!-- Populated by JS -->
-              </select>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="booking-date" class="form-label">Booking Date</label>
-                <input type="date" class="form-control bg-dark border-secondary text-white" id="booking-date" required onchange="handleDateChange()">
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="booking-time" class="form-label">Available Time Slot</label>
-                <select class="form-select bg-dark border-secondary text-white" id="booking-time" required>
-                  <!-- Populated by JS -->
-                </select>
-              </div>
-            </div>
-
-            <!-- Interactive Payment Gateway Module -->
-            <div class="p-3 mb-3 border border-secondary rounded bg-dark-subtle">
-              <h6 class="fw-bold mb-2 text-danger"><i class="fa-solid fa-credit-card me-2"></i>Payment Gateway Checkout</h6>
-              
-              <div class="mb-2">
-                <label for="payment-method" class="form-label small text-muted">Select Payment Option</label>
-                <select class="form-select form-select-sm bg-dark border-secondary text-white" id="payment-method" required>
-                  <option value="gpay">Google Pay (GPay)</option>
-                  <option value="phonepe">PhonePe</option>
-                  <option value="paytm">Paytm</option>
-                  <option value="redeem">Redeem Code / Wallet</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="payment-key" class="form-label small text-muted">Enter Payment Pin / Passkey</label>
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text bg-dark border-secondary text-white-50"><i class="fa-solid fa-key"></i></span>
-                  <input type="password" class="form-control bg-dark border-secondary text-white" id="payment-key" placeholder="Enter key (e.g. pass123)" required>
+            <div class="row g-3">
+              <!-- Left column -->
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Selected Chair</label>
+                  <input type="text" class="form-control" id="booking-chair-name" readonly>
                 </div>
-                <small class="text-white-50 mt-1 d-block" style="font-size: 0.75rem;">Hint: Use <strong>pass123</strong> to authorize transaction.</small>
-              </div>
-            </div>
 
-            <div class="p-3 bg-secondary bg-opacity-25 rounded mb-3">
-              <div class="d-flex justify-content-between small text-white-50">
-                <span>Duration:</span>
-                <span id="summary-duration">0 min</span>
-              </div>
-              <div class="d-flex justify-content-between fw-bold text-danger mt-1 fs-5">
-                <span>Total Cost:</span>
-                <span id="summary-price">$0.00</span>
-              </div>
-            </div>
+                <div class="mb-3">
+                  <label for="booking-service" class="form-label">Grooming Service <span class="text-danger">*</span></label>
+                  <select class="form-select" id="booking-service" required onchange="calculateBookingSummary()">
+                    <!-- Populated by JS -->
+                  </select>
+                </div>
 
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-outline-secondary w-50 py-2 fw-bold" data-bs-dismiss="modal">
-                <i class="fa-solid fa-circle-xmark me-2"></i>Cancel Hold
-              </button>
-              <button type="submit" class="btn btn-danger w-50 py-2 fw-bold">
-                <i class="fa-solid fa-circle-check me-2"></i>Confirm Booking
-              </button>
+                <div class="mb-3">
+                  <label for="booking-date" class="form-label">Booking Date <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control" id="booking-date" required onchange="handleDateChange()">
+                </div>
+
+                <!-- Time Slot Chips -->
+                <div class="mb-3">
+                  <label class="form-label d-flex justify-content-between">
+                    <span>Available Time Slots <span class="text-danger">*</span></span>
+                    <span class="text-muted" style="font-size:0.72rem" id="slot-day-label"></span>
+                  </label>
+                  <input type="hidden" id="booking-time" required>
+                  <div class="time-slots-wrapper" id="time-slots-grid">
+                    <span class="text-muted small">Select a date first…</span>
+                  </div>
+                  <div class="mt-1" style="font-size:0.72rem;color:var(--be-muted)">
+                    <i class="fa-solid fa-circle me-1" style="font-size:0.5rem;color:var(--be-primary)"></i>Available &nbsp;
+                    <i class="fa-solid fa-circle text-secondary me-1" style="font-size:0.5rem"></i>Booked
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right column -->
+              <div class="col-md-6">
+                <!-- Payment Gateway -->
+                <div class="mb-3">
+                  <label class="form-label">Payment Method <span class="text-danger">*</span></label>
+                  <div class="row g-2 mb-2" id="payment-method-grid">
+                    <div class="col-6">
+                      <div class="payment-opt selected" data-val="gpay" onclick="selectPayment(this)">
+                        <i class="fa-brands fa-google-pay" style="font-size:1.4rem"></i>
+                        <div style="font-size:0.72rem;margin-top:3px">Google Pay</div>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="payment-opt" data-val="phonepe" onclick="selectPayment(this)">
+                        <i class="fa-solid fa-mobile-screen" style="font-size:1.2rem;color:var(--be-primary)"></i>
+                        <div style="font-size:0.72rem;margin-top:3px">PhonePe</div>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="payment-opt" data-val="paytm" onclick="selectPayment(this)">
+                        <i class="fa-solid fa-p" style="font-size:1.2rem;color:var(--be-primary)"></i>
+                        <div style="font-size:0.72rem;margin-top:3px">Paytm</div>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="payment-opt" data-val="wallet" onclick="selectPayment(this)">
+                        <i class="fa-solid fa-wallet" style="font-size:1.2rem;color:var(--be-primary)"></i>
+                        <div style="font-size:0.72rem;margin-top:3px">Wallet</div>
+                      </div>
+                    </div>
+                  </div>
+                  <input type="hidden" id="payment-method" value="gpay">
+                </div>
+
+                <div class="mb-3">
+                  <label for="payment-key" class="form-label">Payment PIN / Passkey</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
+                    <input type="password" class="form-control" id="payment-key" placeholder="Enter passkey">
+                    <span class="input-group-text" style="cursor:pointer" onclick="togglePayPwd()">
+                      <i class="fa-solid fa-eye text-muted" id="pay-eye"></i>
+                    </span>
+                  </div>
+                  <div class="mt-1" style="font-size:0.71rem;color:var(--be-muted)">
+                    Demo key: <code class="text-primary">pass123</code>
+                  </div>
+                </div>
+
+                <!-- Booking Summary -->
+                <div class="booking-summary mb-3">
+                  <div class="booking-summary-row">
+                    <span class="label">Service</span>
+                    <span class="value fw-semibold" id="summary-service-name">—</span>
+                  </div>
+                  <div class="booking-summary-row">
+                    <span class="label">Duration</span>
+                    <span class="value" id="summary-duration">—</span>
+                  </div>
+                  <div class="booking-summary-row">
+                    <span class="label">Date & Time</span>
+                    <span class="value" id="summary-datetime">—</span>
+                  </div>
+                  <div class="booking-summary-row total">
+                    <span class="label">Total</span>
+                    <span class="value" id="summary-price">$0.00</span>
+                  </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-outline-secondary w-50 fw-bold py-2" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark me-1"></i>Cancel Hold
+                  </button>
+                  <button type="submit" class="btn btn-primary w-50 fw-bold py-2" id="confirm-booking-btn">
+                    <i class="fa-solid fa-circle-check me-1"></i>Confirm Booking
+                  </button>
+                </div>
+              </div>
             </div>
           </form>
         </div>
@@ -225,27 +629,53 @@
     </div>
   </div>
 
-  <!-- Queue Joining Modal -->
+  <!-- ── Queue Joining Modal ── -->
   <div class="modal fade" id="queueModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-dark text-white border-secondary">
-        <div class="modal-header border-secondary">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-ticket text-danger me-2"></i>Join Digital Waiting Queue</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content be-modal">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">
+            <i class="fa-solid fa-ticket me-2" style="color:var(--be-primary)"></i>Join Digital Waiting Queue
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <p class="text-muted small">Select a service to join the virtual line and receive your digital queue token number.</p>
-          
+          <div class="p-3 rounded mb-3" style="background:#f1f5f9;border:1px solid var(--be-border)">
+            <div class="fw-bold small text-dark mb-1"><i class="fa-solid fa-circle-info me-1 text-primary"></i>How the Queue Works</div>
+            <ol class="text-muted small mb-0 ps-3">
+              <li>Select your desired service below</li>
+              <li>Receive your digital token (e.g. <strong class="text-dark">Q-001</strong>)</li>
+              <li>Track your position live from this portal</li>
+              <li>When your token is called, you'll be assigned to the first available chair</li>
+            </ol>
+          </div>
+
           <form onsubmit="confirmJoinQueue(event)">
             <div class="mb-3">
-              <label for="queue-service" class="form-label">Select Service</label>
-              <select class="form-select bg-dark border-secondary text-white" id="queue-service" required>
-                <!-- Populated by JS -->
-              </select>
+              <label for="queue-service" class="form-label fw-semibold">Select Service <span class="text-danger">*</span></label>
+              <select class="form-select" id="queue-service" required></select>
             </div>
-            
-            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold">
-              <i class="fa-solid fa-ticket me-2"></i>Generate Token & Join
+
+            <div class="mb-3" id="queue-position-preview" style="display:none">
+              <div class="d-flex align-items-center justify-content-between p-3 rounded"
+                style="background:#f8fafc;border:1px solid var(--be-border)">
+                <div>
+                  <div class="text-muted small">You will be position</div>
+                  <div class="fw-bold fs-4 text-dark" id="queue-preview-pos">#—</div>
+                </div>
+                <div>
+                  <div class="text-muted small">Est. wait time</div>
+                  <div class="fw-bold fs-4 text-primary" id="queue-preview-wait">— min</div>
+                </div>
+                <div>
+                  <div class="text-muted small">Your token</div>
+                  <div class="fw-bold fs-4 text-primary" id="queue-preview-token">Q-—</div>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold text-white" id="join-queue-btn">
+              <i class="fa-solid fa-ticket me-2"></i>Get Token &amp; Join Queue
             </button>
           </form>
         </div>
@@ -253,23 +683,34 @@
     </div>
   </div>
 
-  <!-- Wallet Top-Up Modal -->
+  <!-- ── Wallet Top-Up Modal ── -->
   <div class="modal fade" id="topupModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content bg-dark text-white border-secondary">
-        <div class="modal-header border-secondary">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-wallet text-danger me-2"></i>Top Up Wallet</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content be-modal">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">
+            <i class="fa-solid fa-wallet me-2" style="color:var(--be-primary)"></i>Top Up Wallet
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+          <div class="text-center mb-3">
+            <div class="fw-bold" style="font-size:0.85rem;color:var(--be-muted)">Current Balance</div>
+            <div class="fw-bold fs-3 text-primary">$<span id="topup-current-bal">0.00</span></div>
+          </div>
           <form onsubmit="confirmTopUp(event)">
             <div class="mb-3">
               <label for="topup-amount" class="form-label">Amount to Add ($)</label>
-               <input type="number" class="form-control bg-dark border-secondary text-white" id="topup-amount" required placeholder="20.00" min="5" max="1000" step="1">
-               <small class="text-white-50 mt-1 d-block">Min: $5.00 | Max: $1000.00</small>
+              <input type="number" class="form-control" id="topup-amount" required
+                placeholder="20.00" min="5" max="1000" step="1">
+              <div class="text-muted mt-1" style="font-size:0.75rem">Min: $5 · Max: $1,000</div>
             </div>
-            
-            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold">
+            <div class="d-flex gap-2 mb-3">
+              <button type="button" class="btn btn-sm btn-outline-secondary flex-fill fw-bold" onclick="setTopup(20)">+$20</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary flex-fill fw-bold" onclick="setTopup(50)">+$50</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary flex-fill fw-bold" onclick="setTopup(100)">+$100</button>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
               <i class="fa-solid fa-circle-check me-2"></i>Confirm Top Up
             </button>
           </form>
@@ -278,19 +719,428 @@
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
+  <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
 
-
-  <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Auth Script -->
   <script src="/js/auth.js"></script>
-  <!-- Client Dashboard logic -->
+
+  <style>
+    .payment-opt {
+      background: var(--be-card-2);
+      border: 1px solid var(--be-border);
+      border-radius: 10px;
+      padding: 0.6rem;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--be-transition);
+    }
+    .payment-opt:hover { border-color: var(--be-border-hover); }
+    .payment-opt.selected {
+      border-color: var(--be-primary);
+      background: rgba(37,99,235,0.15);
+    }
+  </style>
+
   <script src="/js/dashboard.js"></script>
   <script>
-    // Force authentication check on page load
     checkAuth('customer');
+
+    // ── Tab Switching ──
+    function switchTab(name) {
+      ['session','queue','history'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
+        document.getElementById(`panel-${t}`).classList.toggle('active', t === name);
+      });
+      if (name === 'queue') fetchWaitingList();
+      if (name === 'history') fetchHistory();
+    }
+
+    // ── Date label ──
+    document.getElementById('current-date-label').textContent =
+      new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+    // ── Quick action helper ──
+    function showChairHelp() {
+      showToast('🟢 Click any green chair on the left map to start booking!', 'info');
+    }
+
+    // ── Payment method selection ──
+    function selectPayment(el) {
+      document.querySelectorAll('.payment-opt').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('payment-method').value = el.dataset.val;
+    }
+
+    // ── Toggle payment password ──
+    function togglePayPwd() {
+      const f = document.getElementById('payment-key');
+      const i = document.getElementById('pay-eye');
+      f.type = f.type === 'password' ? 'text' : 'password';
+      i.className = f.type === 'password' ? 'fa-solid fa-eye text-muted' : 'fa-solid fa-eye-slash text-muted';
+    }
+
+    // ── Top-Up helpers ──
+    function setTopup(amt) {
+      document.getElementById('topup-amount').value = amt;
+    }
+    const _origOpenTopUp = openTopUpModal;
+    window.openTopUpModal = function() {
+      const bal = document.getElementById('customer-wallet-balance').textContent;
+      document.getElementById('topup-current-bal').textContent = bal;
+      _origOpenTopUp();
+    };
+
+    // ── Queue position preview ──
+    document.getElementById('queue-service')?.addEventListener('change', function() {
+      const preview = document.getElementById('queue-position-preview');
+      const queueCount = parseInt(document.getElementById('queue-count').textContent) || 0;
+      const pos = queueCount + 1;
+      const serviceEl = this.options[this.selectedIndex];
+      const dur = serviceEl?.getAttribute('data-duration') || 30;
+      const wait = queueCount * parseInt(dur);
+      document.getElementById('queue-preview-pos').textContent = '#' + pos;
+      document.getElementById('queue-preview-wait').textContent = wait + ' min';
+      document.getElementById('queue-preview-token').textContent = 'Q-' + String(pos).padStart(3,'0');
+      preview.style.display = 'block';
+    });
+
+    // ── Fetch waiting list (for Queue tab) ──
+    async function fetchWaitingList() {
+      const token = localStorage.getItem('barber_token');
+      const container = document.getElementById('waiting-list-container');
+      const estText = document.getElementById('est-wait-text');
+      try {
+        const res = await fetch('/api/queue', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const user = JSON.parse(localStorage.getItem('barber_user'));
+        const rawList = data.data || [];
+        const list = rawList.filter(q => q.status === 'waiting' || q.status === 'called');
+
+        // Update waiting list container
+        if (!res.ok || list.length === 0) {
+          container.innerHTML = `<div class="text-center py-4 text-muted small">
+            <i class="fa-solid fa-users fa-2x text-secondary d-block mb-2"></i>Queue is empty — all customers are seated!
+          </div>`;
+          estText.textContent = 'No one waiting';
+          document.getElementById('queue-count').textContent = '0';
+          const badge = document.getElementById('queue-tab-badge');
+          if (badge) badge.style.display = 'none';
+        } else {
+          document.getElementById('queue-count').textContent = list.length;
+          const badge = document.getElementById('queue-tab-badge');
+          if (badge) {
+            badge.textContent = list.length;
+            badge.style.display = '';
+          }
+
+          // 2 active chairs operate concurrently. Estimated wait across queue:
+          const totalWait = Math.ceil(list.length / 2) * 30;
+          estText.textContent = `Total estimated queue time: ${totalWait} min`;
+
+          container.innerHTML = list.map((q, i) => {
+            const isYou = user && (q.customer_id === user.id || (q.customer && q.customer.id === user.id));
+            const chairBadge = q.chair?.chair_number || q.chair_id 
+              ? `<span class="badge" style="background:rgba(37,99,235,0.15);color:#60a5fa;font-size:0.68rem;margin-top:2px;border:1px solid rgba(37,99,235,0.3)">Station ${q.chair?.chair_number || q.chair_id}</span>` 
+              : '';
+            const waitDisplay = i === 0 ? 'Next up' : `~${q.estimated_wait_minutes != null && q.estimated_wait_minutes > 0 ? q.estimated_wait_minutes : (i * 30)} min`;
+            return `<div class="waiting-list-item ${isYou ? 'is-you' : ''} mb-2">
+              <div class="position-badge">${i + 1}</div>
+              <div class="d-flex flex-column" style="min-width:0">
+                <span class="waiting-list-name">${isYou ? '⭐ You' : maskName(q.customer?.name || 'Customer')}</span>
+                <span class="waiting-list-service">${q.service?.name || 'Haircut'}</span>
+                ${chairBadge}
+              </div>
+              <span class="waiting-list-wait">${waitDisplay}</span>
+              ${isYou && q.status === 'waiting' ? `<button class="btn btn-outline-secondary btn-sm py-0 px-2 ms-1" onclick="cancelQueueEntry(${q.id})" style="font-size:0.7rem">Leave</button>` : ''}
+            </div>`;
+          }).join('');
+
+          // Update ticker
+          const tickerNames = list.slice(0, 5).map((q, i) => `#${i+1} ${q.service?.name || 'Customer'}`).join(' · ');
+          document.getElementById('queue-ticker-text').textContent =
+            `LIVE · Queue: ${list.length} waiting · ${tickerNames} · Avg wait: ~${Math.round(totalWait / list.length)} min ·`;
+        }
+
+        // ── Fetch my specific queue status (Waiting / Called / Seated / Served) ──
+        let myEntry = null;
+        try {
+          const myRes = await fetch('/api/queue/my-status', { headers: { 'Authorization': `Bearer ${token}` } });
+          const myData = await myRes.json();
+          if (myRes.ok && myData.data) {
+            myEntry = myData.data;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+
+        // Fallback: search in rawList
+        if (!myEntry && user) {
+          myEntry = rawList.find(q => q.customer_id === user.id || (q.customer && q.customer.id === user.id));
+        }
+
+        if (myEntry) {
+          // Check if customer dismissed completed queue
+          const isDismissed = sessionStorage.getItem('dismissed_queue_' + myEntry.id);
+          const st = (myEntry.status || '').toLowerCase();
+          if (isDismissed && (st === 'completed' || st === 'served')) {
+            myEntry = null;
+          } else if (st === 'waiting') {
+            const wIdx = list.findIndex(q => q.id === myEntry.id);
+            if (wIdx >= 0) myEntry.position = wIdx + 1;
+          }
+        }
+
+        renderQueueTracker(myEntry);
+
+      } catch (e) {
+        container.innerHTML = `<div class="text-center py-3 text-muted small">Unable to load queue data.</div>`;
+      }
+    }
+    window.fetchWaitingList = fetchWaitingList;
+
+    function maskName(name) {
+      if (!name) return 'Customer';
+      const parts = name.split(' ');
+      return parts[0][0] + '***' + (parts.length > 1 ? ' ' + parts[parts.length - 1][0] + '.' : '');
+    }
+
+    function dismissCompletedQueueAndJoin(entryId) {
+      if (entryId) sessionStorage.setItem('dismissed_queue_' + entryId, 'true');
+      if (window._servedDismissTimer) {
+        clearTimeout(window._servedDismissTimer);
+        window._servedDismissTimer = null;
+      }
+      if (window._servedInterval) {
+        clearInterval(window._servedInterval);
+        window._servedInterval = null;
+      }
+      fetchWaitingList();
+    }
+    window.dismissCompletedQueueAndJoin = dismissCompletedQueueAndJoin;
+
+    // ── Queue Position Tracker ──
+    function renderQueueTracker(myEntry) {
+      const panel = document.getElementById('queue-tracker-panel');
+      if (!myEntry) {
+        panel.innerHTML = `<div class="text-center text-muted py-4 flex-fill d-flex flex-column align-items-center justify-content-center">
+          <i class="fa-solid fa-circle-check text-success mb-2" style="font-size:2.2rem"></i>
+          <p class="fw-bold text-dark mb-1" style="font-size:0.95rem">Ready for Next Token</p>
+          <p class="text-muted" style="font-size:0.78rem">You are not currently in the queue. Get a new token or book a chair below.</p>
+          <button class="btn btn-sm btn-primary fw-bold mt-2 shadow-sm" onclick="openQueueModal()">
+            <i class="fa-solid fa-ticket me-1"></i>Get Next Token
+          </button>
+        </div>`;
+        return;
+      }
+
+      const rawStatus = (myEntry.status || 'waiting').toLowerCase();
+      let statIdx = 0;
+      if (rawStatus === 'called') statIdx = 1;
+      else if (rawStatus === 'serving' || rawStatus === 'seated' || rawStatus === 'in_progress') statIdx = 2;
+      else if (rawStatus === 'completed' || rawStatus === 'served') statIdx = 3;
+
+      const steps = [
+        { label: 'Waiting', icon: 'fa-clock' },
+        { label: 'Called',  icon: 'fa-volume-high' },
+        { label: 'Seated',  icon: 'fa-scissors' },
+        { label: 'Served',  icon: 'fa-check' }
+      ];
+
+      const stepsHtml = steps.map((step, i) => {
+        const isDone = i < statIdx;
+        const isActive = i === statIdx;
+        return `
+          ${i > 0 ? `<div class="queue-step-connector ${isDone ? 'done' : ''}"></div>` : ''}
+          <div class="queue-step">
+            <div class="queue-step-circle ${isDone ? 'done' : isActive ? 'active' : ''}">
+              ${isDone ? '<i class="fa-solid fa-check" style="font-size:0.7rem"></i>' : (isActive ? `<i class="fa-solid ${step.icon}" style="font-size:0.7rem"></i>` : (i + 1))}
+            </div>
+            <div class="queue-step-label ${isDone ? 'done' : isActive ? 'active' : ''}">${step.label}</div>
+          </div>`;
+      }).join('');
+
+      // Status-specific banner and info
+      let alertBanner = '';
+      let posText = myEntry.position || '1';
+      let waitText = `${myEntry.estimated_wait_minutes || '~30'}m`;
+      let statusBadge = `<span class="badge bg-warning text-dark">WAITING</span>`;
+
+      if (rawStatus === 'called') {
+        const chNum = myEntry.chair?.chair_number || '1';
+        alertBanner = `<div class="p-2 mb-3 rounded text-center" style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:0.83rem">
+          <i class="fa-solid fa-bell me-1"></i><strong>Your Token is Called!</strong><br/>Please proceed to <strong>Chair ${chNum}</strong>.
+        </div>`;
+        posText = `Chair ${chNum}`;
+        waitText = 'Now!';
+        statusBadge = `<span class="badge bg-info text-dark fw-bold">CALLED</span>`;
+      } else if (rawStatus === 'serving' || rawStatus === 'seated' || rawStatus === 'in_progress') {
+        const chNum = myEntry.chair?.chair_number || '1';
+        alertBanner = `<div class="p-2 mb-3 rounded text-center" style="background:#eff6ff;border:1px solid #3b82f6;color:#1e40af;font-size:0.83rem">
+          <i class="fa-solid fa-scissors me-1"></i><strong>Service In Progress</strong><br/>You are seated at <strong>Chair ${chNum}</strong>.
+        </div>`;
+        posText = `Chair ${chNum}`;
+        waitText = 'In Service ✂️';
+        statusBadge = `<span class="badge bg-primary text-white fw-bold">SEATED</span>`;
+      } else if (rawStatus === 'completed' || rawStatus === 'served') {
+        alertBanner = `<div class="p-3 mb-3 rounded text-center" style="background:#ecfdf5;border:1px solid #10b981;color:#065f46">
+          <div class="fw-bold mb-1" style="font-size:0.95rem"><i class="fa-solid fa-circle-check text-success me-1"></i>Service Completed & Served!</div>
+          <div class="small text-muted mb-2">Station is free. Thank you for visiting BarberEase!</div>
+          <div class="progress mb-2" style="height:5px;background:rgba(16,185,129,0.2);border-radius:3px;overflow:hidden">
+            <div id="served-progress-bar" class="progress-bar bg-success" style="width:100%;transition:width 3.5s linear"></div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center" style="font-size:0.75rem">
+            <span class="text-muted"><i class="fa-solid fa-clock-rotate-left me-1"></i>Clearing token in <strong id="served-countdown">4</strong>s…</span>
+            <button class="btn btn-sm btn-link p-0 text-success fw-bold text-decoration-none" onclick="dismissCompletedQueueAndJoin(${myEntry.id})">Next Token Now →</button>
+          </div>
+        </div>`;
+        posText = 'Done ✓';
+        waitText = 'Finished';
+        statusBadge = `<span class="badge bg-success text-white fw-bold">SERVED</span>`;
+
+        // Automatically clear served card after 3.8 seconds so user advances to next token
+        if (!window._servedDismissTimer) {
+          let count = 4;
+          setTimeout(() => {
+            const bar = document.getElementById('served-progress-bar');
+            if (bar) bar.style.width = '0%';
+          }, 50);
+
+          window._servedInterval = setInterval(() => {
+            count--;
+            const countEl = document.getElementById('served-countdown');
+            if (countEl) countEl.textContent = Math.max(0, count);
+            if (count <= 0) {
+              clearInterval(window._servedInterval);
+              window._servedInterval = null;
+            }
+          }, 950);
+
+          window._servedDismissTimer = setTimeout(() => {
+            sessionStorage.setItem('dismissed_queue_' + myEntry.id, 'true');
+            window._servedDismissTimer = null;
+            fetchWaitingList();
+          }, 3800);
+        }
+      }
+
+      const actionBtn = (rawStatus === 'waiting')
+        ? `<button class="btn btn-outline-secondary btn-sm w-100 mt-3 fw-bold" onclick="cancelQueueEntry(${myEntry.id})">
+            <i class="fa-solid fa-circle-xmark me-1"></i>Leave Queue
+          </button>`
+        : (rawStatus === 'completed' || rawStatus === 'served')
+          ? `<button class="btn btn-primary btn-sm w-100 mt-3 fw-bold" onclick="dismissCompletedQueueAndJoin(${myEntry.id})">
+              <i class="fa-solid fa-ticket me-1"></i>Get Next Token
+            </button>`
+          : '';
+
+      panel.innerHTML = `
+        <div class="text-center mb-3">
+          <div class="text-muted small mb-1">Your Queue Token</div>
+          <div class="token-number" style="font-size:2rem;color:var(--be-primary)">${myEntry.token_number || 'Q-001'}</div>
+        </div>
+
+        <div class="queue-progress flex-wrap mb-3">${stepsHtml}</div>
+
+        ${alertBanner}
+
+        <div class="row g-2 mt-2">
+          <div class="col-6">
+            <div class="p-2 rounded text-center" style="background:#f8fafc;border:1px solid var(--be-border)">
+              <div class="fw-bold text-dark" style="font-size:1.15rem">${posText}</div>
+              <div class="text-muted" style="font-size:0.7rem">Position / Station</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-2 rounded text-center" style="background:#f8fafc;border:1px solid var(--be-border)">
+              <div class="fw-bold text-primary" style="font-size:1.15rem">${waitText}</div>
+              <div class="text-muted" style="font-size:0.7rem">Est. Wait</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 p-2 rounded small" style="background:#f8fafc;border:1px solid var(--be-border)">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted">Service</span>
+            <span class="fw-semibold text-dark">${myEntry.service?.name || 'Haircut'}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">Status</span>
+            ${statusBadge}
+          </div>
+        </div>
+
+        ${actionBtn}`;
+    }
+
+    // ── Appointment History ──
+    async function fetchHistory() {
+      const token = localStorage.getItem('barber_token');
+      const container = document.getElementById('history-list');
+      try {
+        const res = await fetch('/api/appointments/my', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        if (!res.ok || !data.data || data.data.length === 0) {
+          container.innerHTML = `<div class="text-center py-4 text-muted small">
+            <i class="fa-regular fa-folder-open fa-2x text-secondary d-block mb-2"></i>No appointments yet
+          </div>`;
+          return;
+        }
+        container.innerHTML = data.data.slice(0, 8).map(a => {
+          const statusColors = { confirmed:'#38bdf8', pending:'#94a3b8', cancelled:'#64748b', completed:'#3b82f6' };
+          const iconColors = { confirmed:'rgba(56,189,248,0.12)', pending:'rgba(148,163,184,0.12)', cancelled:'rgba(100,116,139,0.12)', completed:'rgba(59,130,246,0.12)' };
+          const sc = statusColors[a.status] || 'var(--be-muted)';
+          const ic = iconColors[a.status] || 'rgba(255,255,255,0.05)';
+          return `<div class="appt-history-item mb-2">
+            <div class="appt-icon" style="background:${ic}">
+              <i class="fa-solid fa-scissors" style="color:${sc}"></i>
+            </div>
+            <div class="appt-meta">
+              <div class="appt-title">${a.service?.name || 'Appointment'}</div>
+              <div class="appt-sub">${a.appointment_date} · ${a.time_slot} · Chair ${a.chair_id}</div>
+            </div>
+            <span class="badge ms-auto" style="background:rgba(255,255,255,0.06);color:${sc};font-size:0.65rem">${a.status?.toUpperCase()}</span>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = `<div class="text-center py-3 text-muted small">Unable to load history.</div>`;
+      }
+    }
+
+    // ── Extend selectChairToBook to set chair title ──
+    const _origSelectChair = selectChairToBook;
+    window.selectChairToBook = function(chairId, chairNum) {
+      document.getElementById('booking-chair-name-title').textContent = `Chair ${chairNum}`;
+      _origSelectChair(chairId, chairNum);
+    };
+
+    // ── WebSocket Real-Time Sync ──
+    function setupDashboardWS() {
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+        ws.onmessage = (e) => {
+          try {
+            const d = JSON.parse(e.data);
+            if (d.event === 'queue-update' || d.event === 'chair-update' || d.event === 'appointment-update') {
+              fetchWaitingList();
+              fetchChairs();
+              fetchHistory();
+            }
+          } catch(err){}
+        };
+        ws.onclose = () => {
+          setTimeout(setupDashboardWS, 5000);
+        };
+      } catch (err) {
+        console.error('WS error:', err);
+      }
+    }
+
+    // ── Startup & Periodic sync ──
+    setupDashboardWS();
+    setInterval(fetchWaitingList, 10000);
+    fetchWaitingList();
   </script>
 </body>
 </html>

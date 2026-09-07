@@ -87,16 +87,38 @@ public class DatabaseSeeder implements CommandLineRunner {
     private void seedChairs() {
         if (chairRepository.count() == 0) {
             List<Chair> chairs = new ArrayList<>();
-            for (int i = 1; i <= 8; i++) {
-                Chair chair = new Chair();
-                chair.setChairNumber(i);
-                chair.setName("Chair " + i);
-                chair.setStatus("available");
-                chair.setActive(true);
-                chairs.add(chair);
-            }
+            Chair chair1 = new Chair();
+            chair1.setChairNumber(1);
+            chair1.setName("Main Service Chair 1");
+            chair1.setStatus("available");
+            chair1.setActive(true);
+            chairs.add(chair1);
+
+            Chair chair2 = new Chair();
+            chair2.setChairNumber(2);
+            chair2.setName("Main Service Chair 2");
+            chair2.setStatus("available");
+            chair2.setActive(true);
+            chairs.add(chair2);
+
             chairRepository.saveAll(chairs);
-            System.out.println("💺 Barber chairs seeded successfully (8 chairs created)");
+            System.out.println("💺 2 Main Service Chairs seeded successfully");
+        } else {
+            // Ensure only 2 main service chairs are active and properly labeled
+            List<Chair> allChairs = chairRepository.findAll();
+            for (Chair c : allChairs) {
+                if (c.getChairNumber() == 1) {
+                    c.setName("Main Service Chair 1");
+                    c.setActive(true);
+                } else if (c.getChairNumber() == 2) {
+                    c.setName("Main Service Chair 2");
+                    c.setActive(true);
+                } else {
+                    c.setActive(false);
+                }
+            }
+            chairRepository.saveAll(allChairs);
+            System.out.println("💺 Configured exactly 2 Main Service Chairs (Chairs 1 & 2 active)");
         }
     }
 

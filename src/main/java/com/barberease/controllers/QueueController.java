@@ -54,8 +54,9 @@ public class QueueController {
     public ResponseEntity<Map<String, Object>> join(@RequestBody Map<String, Object> request) {
         Long customerId = getAuthenticatedCustomerId();
         Long serviceId = parseId(request.get("service_id"));
+        Long chairId = parseId(request.get("chair_id"));
 
-        Queue joined = queueService.addToQueue(customerId, serviceId);
+        Queue joined = queueService.addToQueue(customerId, serviceId, chairId);
 
         Map<String, Object> body = new HashMap<>();
         body.put("success", true);
@@ -65,8 +66,10 @@ public class QueueController {
     }
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getActive() {
-        List<Queue> active = queueService.getActiveQueue();
+    public ResponseEntity<Map<String, Object>> getActive(
+            @RequestParam(name = "chair_id", required = false) Long chairId,
+            @RequestParam(name = "all", required = false, defaultValue = "false") boolean includeAll) {
+        List<Queue> active = queueService.getActiveQueue(chairId, includeAll);
 
         Map<String, Object> body = new HashMap<>();
         body.put("success", true);
@@ -88,10 +91,51 @@ public class QueueController {
     @PostMapping("/call-next")
     public ResponseEntity<Map<String, Object>> callNext() {
         Map<String, Object> data = queueService.callNextCustomer();
+        if (data == null) {
+            Map<String, Object> body = new HashMap<>();
+            body.put("success", false);
+            body.put("message", "No waiting customers or no chairs currently available");
+            return ResponseEntity.badRequest().body(body);
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("success", true);
         body.put("message", "Called next customer");
+        body.put("data", data);
+        return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("/{id}/call")
+    public ResponseEntity<Map<String, Object>> callCustomer(
+            @PathVariable Long id,
+            @RequestParam(value = "chair_id", required = false) Long chairId) {
+        Map<String, Object> data = queueService.callQueueEntry(id, chairId);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("message", "Customer called to station");
+        body.put("data", data);
+        return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("/{id}/seat")
+    public ResponseEntity<Map<String, Object>> seatCustomer(@PathVariable Long id) {
+        Map<String, Object> data = queueService.seatQueueEntry(id);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("message", "Customer seated and service started");
+        body.put("data", data);
+        return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<Map<String, Object>> completeCustomer(@PathVariable Long id) {
+        Map<String, Object> data = queueService.completeQueueEntry(id);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("message", "Service completed");
         body.put("data", data);
         return ResponseEntity.ok(body);
     }
