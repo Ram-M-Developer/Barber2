@@ -36,6 +36,12 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     boolean existsByCustomerIdAndAppointmentDateAndTimeSlotAndStatusIn(
             Long customerId, LocalDate appointmentDate, String timeSlot, Collection<String> statuses);
     
+    boolean existsByAppointmentDateAndTimeSlotAndStatusIn(
+            LocalDate appointmentDate, String timeSlot, Collection<String> statuses);
+
+    Optional<Appointment> findByAppointmentDateAndTimeSlotAndStatusIn(
+            LocalDate appointmentDate, String timeSlot, Collection<String> statuses);
+
     @Query("SELECT a FROM Appointment a WHERE a.status = :status")
     List<Appointment> findByStatus(@Param("status") String status);
 }

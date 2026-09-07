@@ -269,6 +269,202 @@ public class AppointmentService {
         return new ArrayList<>(booked);
     }
 
+    public static final List<String> STANDARD_TIME_SLOTS = Arrays.asList(
+            "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
+            "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM", "02:00 PM", "02:30 PM",
+            "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM",
+            "06:00 PM", "06:30 PM"
+    );
+
+    public List<Map<String, Object>> getDetailedSlots(LocalDate date, Long currentCustomerId) {
+        List<Appointment> appts = appointmentRepository.findByAppointmentDateOrderByTimeSlotAsc(date);
+        List<String> activeStatuses = Arrays.asList("pending", "confirmed", "in_progress");
+
+        Map<String, Appointment> slotToAppt = new HashMap<>();
+        for (Appointment a : appts) {
+            if (activeStatuses.contains(a.getStatus()) && a.getTimeSlot() != null) {
+                slotToAppt.put(a.getTimeSlot().trim().toUpperCase(), a);
+            }
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (String slot : STANDARD_TIME_SLOTS) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("timeSlot", slot);
+
+            Appointment appt = slotToAppt.get(slot.trim().toUpperCase());
+            if (appt != null) {
+                map.put("status", "booked");
+                String customerName = "Customer";
+                if (appt.getCustomer() != null) {
+                    customerName = appt.getCustomer().getName();
+                }
+                map.put("bookedBy", customerName);
+                boolean isCurrent = currentCustomerId != null && appt.getCustomer() != null
+                        && currentCustomerId.equals(appt.getCustomer().getId());
+                map.put("isCurrentCustomer", isCurrent);
+                map.put("appointmentId", appt.getId());
+                map.put("tokenNumber", appt.getTokenNumber());
+                if (appt.getChair() != null) {
+                    map.put("chairNumber", appt.getChair().getChairNumber());
+                    map.put("chairName", appt.getChair().getName());
+                } else {
+                    map.put("chairNumber", null);
+                    map.put("chairName", null);
+                }
+            } else {
+                map.put("status", "available");
+                map.put("bookedBy", null);
+                map.put("isCurrentCustomer", false);
+                map.put("appointmentId", null);
+                map.put("tokenNumber", null);
+                map.put("chairNumber", null);
+                map.put("chairName", null);
+            }
+            result.add(map);
+        }
+        return result;
+    }
+
+    private static final Object BOOKING_LOCK = new Object();
+
+    public Appointment bookSlot(Long customerId, Long serviceId, LocalDate date, String timeSlot,
+                                String notes, String paymentMethod) {
+        synchronized (BOOKING_LOCK) {
+            List<String> activeStatuses = Arrays.asList("pending", "confirmed", "in_progress");
+
+            // Concurrency check: prevent two users from booking the same slot
+            boolean alreadyBooked = appointmentRepository.existsByAppointmentDateAndTimeSlotAndStatusIn(
+                    date, timeSlot, activeStatuses);
+            if (alreadyBooked) {
+                throw new IllegalStateException("Time slot " + timeSlot + " is already booked by another user. Booking unavailable.");
+            }
+
+            Customer customer = customerRepository.findById(customerId)
+                    .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+
+            boolean customerBooked = appointmentRepository.existsByCustomerIdAndAppointmentDateAndTimeSlotAndStatusIn(
+                    customerId, date, timeSlot, activeStatuses);
+            if (customerBooked) {
+                throw new IllegalStateException("You already have an appointment booked for " + timeSlot + " on this date.");
+            }
+
+            com.barberease.models.Service service = null;
+            if (serviceId != null) {
+                service = serviceRepository.findById(serviceId).orElse(null);
+            }
+            if (service == null) {
+                service = serviceRepository.findAll().stream()
+                        .filter(com.barberease.models.Service::isActive)
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException("No active services available"));
+            }
+
+            boolean isWalletPayment = "wallet".equalsIgnoreCase(paymentMethod) || "redeem".equalsIgnoreCase(paymentMethod);
+            if (isWalletPayment) {
+                BigDecimal price = service.getPrice() != null ? service.getPrice() : BigDecimal.ZERO;
+                BigDecimal balance = customer.getWalletBalance() != null ? customer.getWalletBalance() : BigDecimal.ZERO;
+                if (balance.compareTo(price) < 0) {
+                    throw new IllegalStateException(String.format(
+                            "Insufficient wallet balance. Service costs $%.2f but your wallet has $%.2f.", price, balance));
+                }
+                customer.setWalletBalance(balance.subtract(price));
+                customerRepository.save(customer);
+            }
+
+            // Assign to an available seat between Seat 1 and Seat 2
+            Chair assignedSeat = null;
+            List<Chair> availableChairs = chairRepository.findByStatusAndIsActiveTrueOrderByChairNumberAsc("available");
+            if (!availableChairs.isEmpty()) {
+                assignedSeat = availableChairs.get(0);
+                assignedSeat.setStatus("occupied");
+                assignedSeat.setReservedByCustomer(customer);
+                assignedSeat.setReservedAt(LocalDateTime.now());
+                chairRepository.save(assignedSeat);
+            }
+
+            String tokenNumber = generateTokenNumber(date);
+
+            Appointment appointment = new Appointment();
+            appointment.setCustomer(customer);
+            appointment.setService(service);
+            appointment.setChair(assignedSeat);
+            appointment.setTokenNumber(tokenNumber);
+            appointment.setAppointmentDate(date);
+            appointment.setTimeSlot(timeSlot);
+            appointment.setStatus("confirmed");
+            appointment.setNotes(notes);
+            Appointment saved = appointmentRepository.save(appointment);
+
+            Token token = new Token();
+            token.setTokenNumber(tokenNumber);
+            token.setCustomer(customer);
+            token.setAppointment(saved);
+            token.setType("appointment");
+            token.setTokenDate(date);
+            token.setStatus("active");
+            tokenRepository.save(token);
+
+            // If both seats are occupied, add customer to the waiting queue automatically
+            if (assignedSeat == null && queueService != null) {
+                Queue queued = queueService.addToQueue(customerId, service.getId());
+                saved.setTokenNumber(queued.getTokenNumber());
+                appointmentRepository.save(saved);
+            }
+
+            webSocketHandler.broadcast("slot-update");
+            webSocketHandler.broadcast("chair-update");
+            webSocketHandler.broadcast("queue-update");
+            webSocketHandler.broadcast("appointment-update");
+
+            return saved;
+        }
+    }
+
+    public Chair completeSeatService(Long chairId) {
+        Chair chair = chairRepository.findById(chairId)
+                .orElseThrow(() -> new IllegalArgumentException("Seat not found"));
+
+        // Complete active appointment on this chair if any
+        List<Appointment> activeAppts = appointmentRepository.findByChairId(chairId);
+        for (Appointment a : activeAppts) {
+            if ("in_progress".equals(a.getStatus()) || "confirmed".equals(a.getStatus())) {
+                a.setStatus("completed");
+                a.setCompletedAt(LocalDateTime.now());
+                appointmentRepository.save(a);
+            }
+        }
+
+        // Complete any active queue entry assigned to this chair
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        List<Queue> servingQueues = queueRepository.findByChairIdAndStatusInAndCreatedAtAfterOrderByPositionAsc(
+                chairId, Arrays.asList("called", "serving"), startOfDay);
+        for (Queue q : servingQueues) {
+            q.setStatus("completed");
+            q.setCompletedAt(LocalDateTime.now());
+            queueRepository.save(q);
+        }
+
+        // Set seat available
+        chair.setStatus("available");
+        chair.setReservedByCustomer(null);
+        chair.setReservedAt(null);
+        Chair savedChair = chairRepository.save(chair);
+
+        // Check waiting queue: automatically seat the first waiting customer (FIFO)
+        if (queueService != null) {
+            queueService.recalculatePositions();
+            queueService.callNextCustomer();
+        }
+
+        webSocketHandler.broadcast("slot-update");
+        webSocketHandler.broadcast("chair-update");
+        webSocketHandler.broadcast("queue-update");
+        webSocketHandler.broadcast("appointment-update");
+
+        return savedChair;
+    }
+
     public Appointment cancelAppointment(Long appointmentId, Long customerId) {
         Appointment appointment = getAppointmentById(appointmentId);
 
@@ -329,6 +525,7 @@ public class AppointmentService {
             webSocketHandler.broadcast("queue-update");
         }
 
+        webSocketHandler.broadcast("slot-update");
         webSocketHandler.broadcast("chair-update");
         webSocketHandler.broadcast("appointment-update");
 
@@ -414,6 +611,7 @@ public class AppointmentService {
         if (queueService != null) {
             Map<String, Object> called = queueService.callNextCustomer();
             if (called != null) {
+                webSocketHandler.broadcast("slot-update");
                 webSocketHandler.broadcast("queue-update");
                 webSocketHandler.broadcast("chair-update");
                 webSocketHandler.broadcast("appointment-update");
@@ -421,6 +619,7 @@ public class AppointmentService {
             }
         }
 
+        webSocketHandler.broadcast("slot-update");
         webSocketHandler.broadcast("queue-update");
         webSocketHandler.broadcast("chair-update");
         webSocketHandler.broadcast("appointment-update");
@@ -450,7 +649,6 @@ public class AppointmentService {
             chair.setReservedByCustomer(appointment.getCustomer());
             chair.setReservedAt(LocalDateTime.now());
             chairRepository.save(chair);
-            webSocketHandler.broadcast("chair-update");
         }
 
         // ── SYNC TO USER QUEUE: Advance status to 'serving' (SEATED) ──

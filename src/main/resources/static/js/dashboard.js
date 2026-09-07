@@ -128,73 +128,355 @@ function updateStats() {
   }
 }
 
-// Render 2 Main Service Stations (no per-chair waiting seats — queue is global token-based)
-function renderChairsGrid() {
-  const grid = document.getElementById('live-chair-grid');
-  if (!grid) return;
+// ═════════════════════════════════════════════════════════════════
+// 3-SECTION HORIZONTAL BOOKING SYSTEM: 2 SEATS, TIME SLOTS, WAITING QUEUE
+// ═════════════════════════════════════════════════════════════════
 
-  // Ensure exactly 2 main service chairs
-  let mainChairs = chairs.slice(0, 2);
-  if (mainChairs.length === 0) {
-    grid.innerHTML = '<div class="text-center text-muted small py-4 w-100">Loading service stations…</div>';
+let selectedDate = new Date().toISOString().split('T')[0];
+let currentSlots = [];
+let currentWaitingQueue = [];
+
+// 1. LEFT: Render Exactly 2 Service Seats
+function renderChairsGrid() {
+  renderSeats();
+}
+
+function renderSeats() {
+  const container = document.getElementById('seats-container');
+  if (!container) return;
+
+  const seat1 = chairs.find(c => c.chair_number === 1) || { id: 1, chair_number: 1, name: 'Seat 1', status: 'available' };
+  const seat2 = chairs.find(c => c.chair_number === 2) || { id: 2, chair_number: 2, name: 'Seat 2', status: 'available' };
+
+  const renderSeatBox = (seat) => {
+    const isAvail = seat.status === 'available';
+    const statusBadge = isAvail
+      ? `<span class="seat-badge available"><i class="fa-solid fa-circle me-1" style="font-size:0.55rem"></i>Available</span>`
+      : `<span class="seat-badge occupied"><i class="fa-solid fa-circle me-1" style="font-size:0.55rem"></i>Occupied</span>`;
+
+    let occupantName = 'Ready for Booking';
+    let occupantSub = 'Click any available slot in the center to book.';
+    let completeAction = '';
+
+    if (!isAvail) {
+      const custName = seat.reserved_by_customer ? (seat.reserved_by_customer.name || 'Customer') : 'In Service';
+      occupantName = `<i class="fa-solid fa-user me-1 text-danger"></i> ${custName}`;
+      occupantSub = `Active service in progress`;
+      completeAction = `
+        <button type="button" class="seat-btn-complete" onclick="handleCompleteSeat(${seat.id})">
+          <i class="fa-solid fa-circle-check me-1"></i>Complete Service
+        </button>
+      `;
+    }
+
+    return `
+      <div class="seat-card ${isAvail ? 'available' : 'occupied'}">
+        <div class="seat-header">
+          <div class="seat-title">
+            <i class="fa-solid fa-chair text-primary"></i> ${seat.name || ('Seat ' + seat.chair_number)}
+          </div>
+          ${statusBadge}
+        </div>
+        <div class="seat-content">
+          <div class="seat-occupant-name">${occupantName}</div>
+          <div class="seat-occupant-sub">${occupantSub}</div>
+        </div>
+        ${completeAction}
+      </div>
+    `;
+  };
+
+  container.innerHTML = renderSeatBox(seat1) + renderSeatBox(seat2);
+}
+window.renderSeats = renderSeats;
+window.fetchSeats = fetchChairs;
+
+// 2. CENTER: Fetch & Render Available & Booked Time Slots
+async function fetchTimeSlots(date) {
+  if (!date) date = selectedDate;
+  const listEl = document.getElementById('time-slots-list');
+  if (!listEl) return;
+
+  try {
+    const token = localStorage.getItem('barber_token');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+    const res = await fetch(`/api/appointments/slots/detailed?date=${date}`, { headers });
+    const data = await res.json();
+
+    if (res.ok && data.data) {
+      currentSlots = data.data;
+      renderTimeSlots();
+    } else {
+      listEl.innerHTML = `<div class="text-center py-4 text-muted small">No slots found for this date.</div>`;
+    }
+  } catch (err) {
+    console.error('Error fetching time slots:', err);
+    listEl.innerHTML = `<div class="text-center py-4 text-danger small">Failed to load time slots.</div>`;
+  }
+}
+window.fetchTimeSlots = fetchTimeSlots;
+
+function renderTimeSlots() {
+  const listEl = document.getElementById('time-slots-list');
+  if (!listEl) return;
+
+  if (!currentSlots || currentSlots.length === 0) {
+    listEl.innerHTML = `<div class="text-center py-4 text-muted small">No slots available.</div>`;
     return;
   }
 
-  // Global waiting queue count (not per-chair)
-  const globalWaiting = activeQueue.filter(q => q.status === 'waiting' || q.status === 'called').length;
+  listEl.innerHTML = currentSlots.map(s => {
+    const isAvail = s.status === 'available';
 
-  grid.innerHTML = mainChairs.map((c, idx) => {
-    const chairNum = c.chair_number || (idx + 1);
-    let statusClass = 'chair-available';
-    let statusLabel = 'Available';
-    let statusBadgeStyle = 'background:rgba(5,150,105,0.12);color:#059669;border:1px solid rgba(5,150,105,0.3);font-weight:700;';
-
-    if (c.status === 'reserved') {
-      statusClass = 'chair-reserved';
-      statusLabel = 'On Hold';
-      statusBadgeStyle = 'background:rgba(217,119,6,0.12);color:#d97706;border:1px solid rgba(217,119,6,0.3);font-weight:700;';
-    } else if (c.status === 'occupied') {
-      statusClass = 'chair-occupied';
-      statusLabel = 'In Service';
-      statusBadgeStyle = 'background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;font-weight:700;';
+    if (isAvail) {
+      return `
+        <div class="slot-item available">
+          <div class="slot-time-col">
+            <span class="slot-time-text">${s.timeSlot}</span>
+            <span class="slot-status-pill available"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> Available</span>
+          </div>
+          <div class="slot-action-col">
+            <button type="button" class="slot-btn-book" onclick="openSlotBookingModal('${s.timeSlot}')">
+              <i class="fa-solid fa-calendar-check me-1"></i>Book
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      const bookedUserText = s.isCurrentCustomer ? 'Booked by You' : `Booked by ${s.bookedBy || 'Customer'}`;
+      return `
+        <div class="slot-item booked">
+          <div class="slot-time-col">
+            <span class="slot-time-text text-muted">${s.timeSlot}</span>
+            <span class="slot-status-pill booked"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> Booked</span>
+            <span class="small text-muted ms-1 d-none d-sm-inline">(${bookedUserText})</span>
+          </div>
+          <div class="slot-action-col">
+            <button type="button" class="slot-btn-disabled" disabled title="This slot is already booked">
+              <i class="fa-solid fa-lock me-1"></i>Cannot Book
+            </button>
+          </div>
+        </div>
+      `;
     }
+  }).join('');
+}
 
-    const mainBtn = `
-      <div class="d-flex gap-2 w-100 mt-2">
-        <button type="button" class="btn btn-primary btn-sm flex-fill main-chair-action-btn" onclick="event.stopPropagation(); selectChairToBook(${c.id}, ${chairNum})">
-          <i class="fa-solid fa-calendar-check me-1"></i>Select &amp; Book Station ${chairNum}
-        </button>
+// 3. RIGHT: Fetch & Render FIFO Waiting Queue
+async function fetchWaitingQueue() {
+  try {
+    const res = await fetch('/api/queue/waiting');
+    const data = await res.json();
+    if (res.ok && data.data) {
+      currentWaitingQueue = data.data;
+      renderWaitingQueue();
+    }
+  } catch (err) {
+    console.error('Error fetching waiting queue:', err);
+  }
+}
+window.fetchWaitingQueue = fetchWaitingQueue;
+window.fetchWaitingList = fetchWaitingQueue;
+
+function renderWaitingQueue() {
+  const countEl = document.getElementById('waiting-queue-count');
+  const listEl = document.getElementById('waiting-queue-list');
+  if (countEl) countEl.textContent = currentWaitingQueue.length;
+  if (!listEl) return;
+
+  if (currentWaitingQueue.length === 0) {
+    listEl.innerHTML = `
+      <div class="queue-empty-box">
+        <i class="fa-solid fa-mug-hot"></i>
+        <div class="fw-bold text-dark mb-1">No customers waiting</div>
+        <div class="small text-muted">The waiting queue is currently empty. Bookings go straight to free seats!</div>
       </div>
     `;
+    return;
+  }
 
-    const statusText = c.status === 'available' ? 'Available for Booking' : (c.status === 'reserved' ? 'Reservation Hold Active' : 'Station In Service');
-    const statusColor = c.status === 'available' ? '#059669' : (c.status === 'reserved' ? '#d97706' : '#64748b');
-
+  listEl.innerHTML = currentWaitingQueue.map((q, idx) => {
+    const custName = q.customer?.name || 'Customer';
+    const srvName = q.service?.name || 'Grooming Service';
+    const tokNum = q.token_number || ('Q-' + (idx + 1));
     return `
-      <div class="service-station-card">
-        <div class="station-header">
-          <div class="station-title">
-            <i class="fa-solid fa-scissors" style="color:var(--be-primary)"></i>
-            Main Service Station ${chairNum}
-          </div>
-          <span class="badge station-badge" style="${statusBadgeStyle}">${statusLabel}</span>
+      <div class="queue-fifo-item">
+        <div class="queue-pos-badge">${idx + 1}</div>
+        <div class="flex-grow-1 min-w-0">
+          <div class="queue-fifo-name text-truncate">${custName}</div>
+          <div class="queue-fifo-sub text-truncate">${tokNum} • ${srvName}</div>
         </div>
-
-        <!-- Main Service Chair -->
-        <div class="main-chair-hero ${statusClass}" onclick="selectChairToBook(${c.id}, ${chairNum})">
-          <div class="main-chair-icon">
-            <i class="fa-solid fa-chair"></i>
-          </div>
-          <div class="main-chair-name">Main Service Chair ${chairNum}</div>
-          <div class="main-chair-status-text" style="color: ${statusColor}">
-            ${statusText}
-          </div>
-          ${mainBtn}
-        </div>
+        <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Waiting</span>
       </div>
     `;
   }).join('');
 }
+
+// Date Filter Helpers
+function selectDateFilter(type) {
+  document.querySelectorAll('.slot-date-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById(`btn-date-${type}`);
+  if (btn) btn.classList.add('active');
+
+  const today = new Date();
+  let target = new Date(today);
+  if (type === 'tomorrow') target.setDate(today.getDate() + 1);
+  else if (type === 'dayafter') target.setDate(today.getDate() + 2);
+
+  selectedDate = target.toISOString().split('T')[0];
+  const picker = document.getElementById('slot-picker-date');
+  if (picker) picker.value = selectedDate;
+
+  fetchTimeSlots(selectedDate);
+}
+window.selectDateFilter = selectDateFilter;
+
+function onDateChanged(val) {
+  if (!val) return;
+  selectedDate = val;
+  document.querySelectorAll('.slot-date-btn').forEach(b => b.classList.remove('active'));
+  fetchTimeSlots(selectedDate);
+}
+window.onDateChanged = onDateChanged;
+
+// Open Direct Slot Booking Modal
+function openSlotBookingModal(timeSlot) {
+  document.getElementById('slot-modal-time').value = timeSlot;
+  document.getElementById('slot-modal-date').value = selectedDate;
+  document.getElementById('slot-modal-display-time').textContent = timeSlot;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  let dateBadge = selectedDate === todayStr ? 'Today' : selectedDate;
+  document.getElementById('slot-modal-display-date').textContent = dateBadge;
+
+  // Populate services dropdown
+  const srvSelect = document.getElementById('slot-service-select');
+  if (srvSelect && services.length > 0) {
+    srvSelect.innerHTML = services.map(s => `
+      <option value="${s.id}" data-price="${s.price}">
+        ${s.name} — $${parseFloat(s.price).toFixed(2)} (${s.duration_minutes}m)
+      </option>
+    `).join('');
+    updateSlotModalPrice();
+  }
+
+  const modal = new bootstrap.Modal(document.getElementById('slotBookingModal'));
+  modal.show();
+}
+window.openSlotBookingModal = openSlotBookingModal;
+
+function updateSlotModalPrice() {
+  const srvSelect = document.getElementById('slot-service-select');
+  const opt = srvSelect.options[srvSelect.selectedIndex];
+  if (opt) {
+    const price = opt.getAttribute('data-price') || '45.00';
+    document.getElementById('slot-modal-price').textContent = `$${parseFloat(price).toFixed(2)}`;
+  }
+}
+window.updateSlotModalPrice = updateSlotModalPrice;
+
+function selectSlotPayment(btn) {
+  document.querySelectorAll('.slot-pay-btn').forEach(b => {
+    b.classList.remove('active', 'btn-primary');
+    b.classList.add('btn-outline-secondary');
+  });
+  btn.classList.add('active', 'btn-primary');
+  btn.classList.remove('btn-outline-secondary');
+  document.getElementById('slot-payment-method').value = btn.getAttribute('data-pay');
+}
+window.selectSlotPayment = selectSlotPayment;
+
+// Submit Slot Booking
+async function handleConfirmSlotBooking(event) {
+  event.preventDefault();
+  const token = localStorage.getItem('barber_token');
+  if (!token) {
+    showToast('Please log in to book a time slot.', 'danger');
+    return;
+  }
+
+  const timeSlot = document.getElementById('slot-modal-time').value;
+  const appointmentDate = document.getElementById('slot-modal-date').value;
+  const serviceId = document.getElementById('slot-service-select').value;
+  const notes = document.getElementById('slot-notes').value;
+  const paymentMethod = document.getElementById('slot-payment-method').value;
+
+  const submitBtn = document.getElementById('btn-submit-slot-booking');
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Booking slot…`;
+
+  try {
+    const res = await fetch('/api/appointments/book-slot', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        time_slot: timeSlot,
+        appointment_date: appointmentDate,
+        service_id: serviceId,
+        notes: notes,
+        payment_method: paymentMethod
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || 'Double booking collision: This slot was just booked.');
+    }
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('slotBookingModal'));
+    if (modal) modal.hide();
+
+    const assignedSeat = data.data?.chair ? `Seat ${data.data.chair.chair_number}` : 'Waiting Queue';
+    showToast(`🎉 Booked ${timeSlot}! Assigned to ${assignedSeat}.`, 'success');
+
+    // Refresh all 3 panels immediately
+    fetchChairs();
+    fetchTimeSlots(selectedDate);
+    fetchWaitingQueue();
+    fetchUserSession();
+
+  } catch (err) {
+    showToast(err.message, 'danger');
+    // Refresh slots so user immediately sees conflicting status
+    fetchTimeSlots(selectedDate);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `<i class="fa-solid fa-check me-1"></i>Confirm &amp; Book Slot`;
+  }
+}
+window.handleConfirmSlotBooking = handleConfirmSlotBooking;
+
+// Complete Seat Service (Frees seat and auto-seats next waiting customer)
+async function handleCompleteSeat(chairId) {
+  const token = localStorage.getItem('barber_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch(`/api/chairs/${chairId}/complete-service`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('✅ Service completed! Seat freed and next customer in queue seated.', 'success');
+      fetchChairs();
+      fetchTimeSlots(selectedDate);
+      fetchWaitingQueue();
+      fetchUserSession();
+    } else {
+      throw new Error(data.message || 'Failed to complete seat service.');
+    }
+  } catch (err) {
+    showToast(err.message, 'danger');
+  }
+}
+window.handleCompleteSeat = handleCompleteSeat;
+
 
 // Fetch current logged in customer's token & sessions
 async function fetchUserSession() {

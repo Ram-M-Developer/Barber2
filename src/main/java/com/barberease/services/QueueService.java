@@ -137,6 +137,11 @@ public class QueueService {
                 activeStatuses, startOfDay);
     }
 
+    public List<Queue> getWaitingQueue() {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        return queueRepository.findByStatusAndCreatedAtAfterOrderByCreatedAtAsc("waiting", startOfDay);
+    }
+
     public Queue getCustomerQueueStatus(Long customerId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         // 1. Look for active entries (waiting, called, serving)

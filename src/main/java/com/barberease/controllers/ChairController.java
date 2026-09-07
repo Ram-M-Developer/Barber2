@@ -23,6 +23,9 @@ public class ChairController {
     private ChairService chairService;
 
     @Autowired
+    private com.barberease.services.AppointmentService appointmentService;
+
+    @Autowired
     private BarberWebSocketHandler webSocketHandler;
 
     private Long getAuthenticatedCustomerId() {
@@ -120,6 +123,17 @@ public class ChairController {
         Map<String, Object> body = new HashMap<>();
         body.put("success", true);
         body.put("message", "Chair released successfully");
+        body.put("data", chair);
+        return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("/{id}/complete-service")
+    public ResponseEntity<Map<String, Object>> completeService(@PathVariable Long id) {
+        Chair chair = appointmentService.completeSeatService(id);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("message", "Seat service completed and next customer seated");
         body.put("data", chair);
         return ResponseEntity.ok(body);
     }

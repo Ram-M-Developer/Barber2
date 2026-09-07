@@ -105,6 +105,56 @@ public class AppointmentController {
         return ResponseEntity.ok(body);
     }
 
+    private Long getOptionalAuthenticatedCustomerId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && (auth.getPrincipal() instanceof UserPrincipal)) {
+            return ((UserPrincipal) auth.getPrincipal()).getId();
+        }
+        return null;
+    }
+
+    @GetMapping("/slots/detailed")
+    public ResponseEntity<Map<String, Object>> getDetailedSlots(
+            @RequestParam(name = "date", required = false) String dateStr) {
+        LocalDate date = (dateStr != null && !dateStr.isEmpty()) ? LocalDate.parse(dateStr) : LocalDate.now();
+        Long customerId = getOptionalAuthenticatedCustomerId();
+        List<Map<String, Object>> slots = appointmentService.getDetailedSlots(date, customerId);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("date", date.toString());
+        body.put("data", slots);
+        return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("/book-slot")
+    public ResponseEntity<Map<String, Object>> bookSlot(@RequestBody Map<String, Object> request) {
+        Long customerId = getAuthenticatedCustomerId();
+        Object serviceObj = request.get("service_id") != null ? request.get("service_id") : request.get("serviceId");
+        Long serviceId = parseId(serviceObj);
+
+        Object dateObj = request.get("appointment_date") != null ? request.get("appointment_date") : request.get("appointmentDate");
+        String dateStr = dateObj != null ? dateObj.toString() : null;
+        LocalDate date = (dateStr != null && !dateStr.isEmpty()) ? LocalDate.parse(dateStr) : LocalDate.now();
+
+        Object slotObj = request.get("time_slot") != null ? request.get("time_slot") : request.get("timeSlot");
+        String timeSlot = slotObj != null ? slotObj.toString() : null;
+
+        Object notesObj = request.get("notes");
+        String notes = notesObj != null ? notesObj.toString() : null;
+
+        Object payObj = request.get("payment_method") != null ? request.get("payment_method") : request.get("paymentMethod");
+        String paymentMethod = payObj != null ? payObj.toString() : null;
+
+        Appointment booked = appointmentService.bookSlot(customerId, serviceId, date, timeSlot, notes, paymentMethod);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("message", "Time slot " + timeSlot + " booked successfully!");
+        body.put("data", booked);
+        return new ResponseEntity<>(body, HttpStatus.CREATED);
+    }
+
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAll(
             @RequestParam(required = false) String date,

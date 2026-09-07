@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .requestMatchers("/", "/index.html", "/auth/**", "/customer/**", "/admin/**", "/css/**", "/js/**", "/ws/**", "/ws").permitAll()
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/admin/login", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/health").permitAll()
                 .requestMatchers("/api/services/admin/**").authenticated()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/chairs/**", "/api/services/**", "/api/appointments/slots", "/api/queue").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/chairs/**", "/api/services/**", "/api/appointments/slots/**", "/api/appointments/slots", "/api/queue/**", "/api/queue").permitAll()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )

@@ -77,6 +77,17 @@ public class QueueController {
         return ResponseEntity.ok(body);
     }
 
+    @GetMapping("/waiting")
+    public ResponseEntity<Map<String, Object>> getWaiting() {
+        List<Queue> waiting = queueService.getWaitingQueue();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("count", waiting.size());
+        body.put("data", waiting);
+        return ResponseEntity.ok(body);
+    }
+
     @GetMapping("/my-status")
     public ResponseEntity<Map<String, Object>> getMyStatus() {
         Long customerId = getAuthenticatedCustomerId();
