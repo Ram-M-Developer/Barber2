@@ -573,7 +573,13 @@ async function fetchChairsList() {
         else if (c.status === 'maintenance') statusBadge = `<span class="badge bg-danger">MAINTENANCE</span>`;
 
         let actionBtns = '';
-        if (c.status === 'available') {
+        if (c.status === 'occupied' || (c.customer_name && c.customer_name !== '---')) {
+          actionBtns = `
+            <button class="btn btn-danger btn-sm px-2 fw-bold" onclick="completeSeatServiceAdmin(${c.id})">
+              <i class="fa-solid fa-circle-check me-1"></i>Complete Service
+            </button>
+          `;
+        } else if (c.status === 'available') {
           actionBtns = `<button class="btn btn-outline-danger btn-sm px-2" onclick="setChairStatus(${c.id}, 'maintenance')">Set Maintenance</button>`;
         } else if (c.status === 'maintenance') {
           actionBtns = `<button class="btn btn-outline-success btn-sm px-2" onclick="setChairStatus(${c.id}, 'available')">Make Available</button>`;
@@ -581,12 +587,16 @@ async function fetchChairsList() {
           actionBtns = `<span class="text-muted small">Station active</span>`;
         }
 
+        const custDisplay = c.customer_name && c.customer_name !== '---' 
+          ? c.customer_name 
+          : (c.reservedByCustomer?.name || '<span class="text-white-50">-</span>');
+
         return `
           <tr>
             <td><strong>#${c.chair_number}</strong></td>
             <td>${c.name}</td>
             <td>${statusBadge}</td>
-            <td>${c.reservedByCustomer?.name || '<span class="text-white-50">-</span>'}</td>
+            <td>${custDisplay}</td>
             <td>${actionBtns}</td>
           </tr>
         `;
@@ -596,6 +606,31 @@ async function fetchChairsList() {
     console.error(err);
   }
 }
+
+// Complete seat service (Admin action) - frees seat & automatically seats top waiting customer
+async function completeSeatServiceAdmin(chairId) {
+  if (!confirm(`Complete service for Chair ${chairId}? This will free the chair and automatically seat the first waiting customer from the FIFO queue.`)) {
+    return;
+  }
+  const token = localStorage.getItem('barber_admin_token') || localStorage.getItem('barber_token');
+  try {
+    const res = await fetch(`/api/chairs/${chairId}/complete-service`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showAdminToast(data.message || 'Service completed and next customer seated!', 'success');
+      loadTabContent();
+    } else {
+      showAdminToast(data.message || 'Failed to complete service', 'danger');
+    }
+  } catch (err) {
+    showAdminToast(err.message, 'danger');
+    console.error(err);
+  }
+}
+window.completeSeatServiceAdmin = completeSeatServiceAdmin;
 
 // Set chair status (available / maintenance)
 async function setChairStatus(chairId, status) {

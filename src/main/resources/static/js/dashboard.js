@@ -153,36 +153,15 @@ function renderSeats() {
   const isAdmin = userType === 'admin' || localStorage.getItem('barber_admin_token') != null;
 
   const renderSeatCard = (seat, seatNum) => {
-    let statusClass = 'available';
-    let statusBadgeText = '🟢 AVAILABLE';
-    let statusMetaText = 'AVAILABLE';
-
     const custName = seat.customer_name && seat.customer_name !== '---' 
       ? seat.customer_name 
       : (seat.reserved_by_customer ? seat.reserved_by_customer.name : '---');
 
     const timeStr = seat.time && seat.time !== '---' ? seat.time : '---';
 
-    if (seat.status === 'occupied' || (custName !== '---' && seat.status !== 'waiting')) {
-      statusClass = 'occupied';
-      statusBadgeText = '🔴 OCCUPIED';
-      statusMetaText = 'OCCUPIED';
-    } else if (seat.status === 'waiting' || seat.status === 'called') {
-      statusClass = 'waiting';
-      statusBadgeText = '🟡 WAITING';
-      statusMetaText = 'WAITING / NEXT CUSTOMER';
-    }
-
-    let completeBtn = '';
-    if (statusClass === 'occupied') {
-      completeBtn = `
-        <div class="mt-2 pt-2 border-top">
-          <button type="button" class="btn btn-sm btn-outline-danger w-100 fw-bold py-1" onclick="handleCompleteSeat(${seat.id})" style="font-size:0.75rem;">
-            <i class="fa-solid fa-circle-check me-1"></i>[Complete Service]
-          </button>
-        </div>
-      `;
-    }
+    const isServing = (seat.status === 'occupied') || (custName !== '---' && seat.status !== 'waiting');
+    const statusClass = isServing ? 'occupied' : 'available';
+    const statusBadge = isServing ? '🔴 CURRENTLY SERVING' : '🟢 AVAILABLE';
 
     return `
       <div class="seat-card-compact ${statusClass}">
@@ -190,21 +169,20 @@ function renderSeats() {
           <div class="seat-name">
             Seat ${seatNum}
           </div>
-          <span class="seat-status-badge ${statusClass}">${statusBadgeText}</span>
+          <span class="seat-status-badge ${statusClass}">${statusBadge}</span>
         </div>
         <div class="seat-meta-row">
           <span class="seat-meta-label">Customer:</span>
-          <span class="seat-meta-val">${custName}</span>
+          <span class="seat-meta-val">${isServing ? custName : '---'}</span>
         </div>
         <div class="seat-meta-row">
           <span class="seat-meta-label">Time:</span>
-          <span class="seat-meta-val">${timeStr}</span>
+          <span class="seat-meta-val">${isServing ? timeStr : '---'}</span>
         </div>
         <div class="seat-meta-row">
           <span class="seat-meta-label">Status:</span>
-          <span class="seat-meta-val text-uppercase">${statusMetaText}</span>
+          <span class="seat-meta-val text-uppercase">${isServing ? 'CURRENTLY SERVING' : 'AVAILABLE'}</span>
         </div>
-        ${completeBtn}
       </div>
     `;
   };
