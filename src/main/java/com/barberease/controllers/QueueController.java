@@ -21,6 +21,9 @@ public class QueueController {
     @Autowired
     private QueueService queueService;
 
+    @Autowired
+    private com.barberease.repositories.AppointmentRepository appointmentRepository;
+
     private Long getAuthenticatedCustomerId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal)) {
@@ -92,6 +95,16 @@ public class QueueController {
             String name = q.getCustomer() != null ? q.getCustomer().getName() : "Customer";
             m.put("customer_name", name);
             m.put("service_name", q.getService() != null ? q.getService().getName() : "Haircut");
+            
+            String requestedSlot = "Next Available";
+            if (q.getTokenNumber() != null) {
+                com.barberease.models.Appointment appt = appointmentRepository.findByTokenNumber(q.getTokenNumber()).stream().findFirst().orElse(null);
+                if (appt != null && appt.getTimeSlot() != null) {
+                    requestedSlot = appt.getTimeSlot();
+                }
+            }
+            m.put("requested_slot", requestedSlot);
+            m.put("created_at", q.getCreatedAt() != null ? q.getCreatedAt().toString() : null);
             list.add(m);
         }
 

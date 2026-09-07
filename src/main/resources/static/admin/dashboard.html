@@ -4,454 +4,193 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard — BarberEase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body style="background-color: var(--be-dark);">
+<body class="booking-page-root">
 
-  <!-- Sidebar -->
-  <aside class="admin-sidebar shadow">
-    <div class="px-4 py-2 border-bottom border-secondary mb-3">
-      <a class="brand-logo text-decoration-none" href="/admin/dashboard.html">
-        <i class="fa-solid fa-scissors" style="color:var(--be-primary)"></i> BARBER<span style="color:#ffffff">EASE</span>
-      </a>
-      <span class="badge fs-8 mt-1" style="background:rgba(37,99,235,0.15);color:#93c5fd;border:1px solid rgba(37,99,235,0.3)">ADMIN CONTROL</span>
-    </div>
-    
-    <nav class="nav flex-column">
-      <a class="nav-link active" href="#" onclick="switchTab('overview')"><i class="fa-solid fa-chart-line"></i>Overview</a>
-      <a class="nav-link" href="#" onclick="switchTab('appointments')"><i class="fa-solid fa-calendar-check"></i>Appointments</a>
-      <a class="nav-link" href="#" onclick="switchTab('queue')"><i class="fa-solid fa-users-line"></i>Queue Center</a>
-      <a class="nav-link" href="#" onclick="switchTab('chairs')"><i class="fa-solid fa-chair"></i>Chairs</a>
-      <a class="nav-link" href="#" onclick="switchTab('services')"><i class="fa-solid fa-scissors"></i>Services</a>
-      <a class="nav-link" href="#" onclick="switchTab('customers')"><i class="fa-solid fa-user-group"></i>Customers</a>
-      <a class="nav-link" href="#" onclick="switchTab('reports')"><i class="fa-solid fa-file-invoice-dollar"></i>Reports</a>
-    </nav>
-
-    <div class="position-absolute bottom-0 start-0 w-100 p-3 border-top border-secondary bg-dark-subtle">
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <i class="fa-solid fa-user-circle fs-5" style="color:var(--be-primary)"></i>
-        <span class="small fw-bold text-white-50" id="admin-user-display">Admin</span>
-      </div>
-      <button class="btn btn-outline-secondary btn-sm w-100 fw-bold text-white" onclick="handleLogout()">
-        <i class="fa-solid fa-right-from-bracket me-1"></i>Logout
-      </button>
-    </div>
-  </aside>
-
-  <!-- Main Content Container -->
-  <main class="admin-content">
-    
-    <!-- Top Bar -->
-    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary">
-      <div>
-        <h3 class="fw-bold" id="admin-section-title">Overview Dashboard</h3>
-        <p class="text-muted small mb-0">Smart Appointment & Real-time Queue Control Station</p>
-      </div>
-      <div>
-        <span class="badge bg-secondary p-2 small"><i class="fa-regular fa-clock me-1 text-danger"></i> Live Connection</span>
-      </div>
-    </div>
-
-    <!-- Alert Container -->
-    <div id="alert-container"></div>
-
-    <!-- ================= SECTION: OVERVIEW ================= -->
-    <div class="tab-section active" id="sec-overview">
+  <!-- ═══════════════════════════════════════════════════════════════
+       COMPACT TOP NAVIGATION BAR (52px fixed height)
+  ════════════════════════════════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg bg-white border-bottom border-secondary-subtle px-3 py-1.5 flex-shrink-0" style="height: 52px; z-index: 1020;">
+    <div class="container-fluid px-0 d-flex justify-content-between align-items-center">
       
-      <!-- Stats Count Row -->
-      <div class="row g-4 mb-4" id="stats-banner">
-        <div class="col-md-3 col-6">
-          <div class="stat-card">
-            <div class="stat-value text-primary" id="stat-today-bookings">0</div>
-            <div class="stat-label">Today's Bookings</div>
+      <!-- Brand & Admin Badge -->
+      <div class="d-flex align-items-center gap-2">
+        <a class="navbar-brand d-flex align-items-center gap-2 m-0 p-0 text-decoration-none" href="/admin/dashboard.html">
+          <div class="rounded d-flex align-items-center justify-content-center" style="width:30px;height:30px;background:#2563eb;color:#fff;">
+            <i class="fa-solid fa-scissors" style="font-size:0.9rem;"></i>
           </div>
-        </div>
-        <div class="col-md-3 col-6">
-          <div class="stat-card">
-            <div class="stat-value text-white" id="stat-today-completed">0</div>
-            <div class="stat-label">Served / Completed</div>
-          </div>
-        </div>
-        <div class="col-md-3 col-6">
-          <div class="stat-card">
-            <div class="stat-value text-info" id="stat-queue-waiting">0</div>
-            <div class="stat-label">Clients Waiting</div>
-          </div>
-        </div>
-        <div class="col-md-3 col-6">
-          <div class="stat-card">
-            <div class="stat-value text-primary" id="stat-total-revenue">$0.00</div>
-            <div class="stat-label">Today's Revenue</div>
-          </div>
+          <span class="fw-bold tracking-tight text-dark" style="font-size: 1.1rem; letter-spacing: -0.5px;">
+            BARBER<span style="color:#2563eb">EASE</span>
+          </span>
+        </a>
+        <span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+          ADMIN CONTROL
+        </span>
+      </div>
+
+      <!-- Center Live Synchronized & Realtime Clock -->
+      <div class="d-none d-lg-flex align-items-center gap-3">
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;">
+          <span class="ws-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;"></span>
+          <span id="admin-ws-status">Live Synchronized</span>
+        </span>
+        <div class="text-muted small fw-semibold d-flex align-items-center gap-1.5" style="font-size: 0.8rem;">
+          <i class="fa-regular fa-clock text-primary"></i>
+          <span id="admin-clock-label">--:-- --</span>
+          <span class="text-secondary mx-1">·</span>
+          <span id="admin-date-label">Today</span>
         </div>
       </div>
 
-      <!-- Overview Info Grid -->
-      <div class="row g-4">
-        <!-- Chair Status Board -->
-        <div class="col-lg-6">
-          <div class="card card-dark h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <h5 class="mb-0 fw-bold">Live Chair Grid Map</h5>
-              <div class="d-flex gap-2">
-                <span class="badge bg-success">🟢 Active</span>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex justify-content-center gap-3 flex-wrap py-4" id="overview-chair-grid">
-                <!-- Populated dynamically -->
-              </div>
-              <div class="d-flex gap-3 justify-content-center flex-wrap small pt-2 border-top border-secondary">
-                <span>🟢 Available</span>
-                <span>🟡 Reserved</span>
-                <span>⚫ Occupied</span>
-                <span>🔴 Maintenance</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Right Action & Admin Profile Controls -->
+      <div class="d-flex align-items-center gap-2">
+        <a href="/" class="btn btn-sm btn-outline-secondary py-1 px-2.5 d-none d-md-inline-flex align-items-center gap-1 text-decoration-none" style="font-size: 0.78rem;" target="_blank" title="Open Customer View">
+          <i class="fa-solid fa-eye text-muted"></i> Customer View
+        </a>
 
-        <!-- Live Queue Control summary -->
-        <div class="col-lg-6">
-          <div class="card card-dark h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <h5 class="mb-0 fw-bold">Queue Quick Actions</h5>
-              <button class="btn btn-danger btn-sm fw-bold" onclick="callNextQueue()"><i class="fa-solid fa-bullhorn me-1"></i>Call Next</button>
-            </div>
-            <div class="card-body" id="overview-queue-summary">
-              <!-- Rendered list of current waiting -->
-            </div>
-          </div>
+        <!-- Admin User Badge -->
+        <div class="dropdown">
+          <button class="btn btn-sm btn-light border py-1 px-2.5 d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.78rem;">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width:22px;height:22px;font-size:0.7rem;">A</div>
+            <span class="fw-semibold text-dark" id="admin-username-display">Administrator</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="font-size:0.82rem; min-width: 170px;">
+            <li><h6 class="dropdown-header text-muted text-uppercase" style="font-size:0.65rem;">System Admin</h6></li>
+            <li><a class="dropdown-item py-1.5" href="/" target="_blank"><i class="fa-solid fa-store me-2 text-primary"></i>Client Booking Screen</a></li>
+            <li><hr class="dropdown-divider my-1"></li>
+            <li>
+              <button class="dropdown-item py-1.5 text-danger fw-semibold" onclick="handleLogout()">
+                <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
+              </button>
+            </li>
+          </ul>
         </div>
       </div>
 
     </div>
+  </nav>
 
-    <!-- ================= SECTION: APPOINTMENTS ================= -->
-    <div class="tab-section d-none" id="sec-appointments">
-      <div class="card card-dark shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0 fw-bold">Active Reservations</h5>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-dark table-striped table-hover table-dark-custom align-middle">
-              <thead>
-                <tr>
-                  <th>Token</th>
-                  <th>Customer</th>
-                  <th>Grooming Service</th>
-                  <th>Chair</th>
-                  <th>Time Slot</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="tbl-appointments-body">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
+  <!-- ═══════════════════════════════════════════════════════════════
+       FIXED 3-COLUMN MAIN LAYOUT (STRICT VIEWPORT FIT, NO PAGE SCROLL)
+  ════════════════════════════════════════════════════════════════ -->
+  <main class="booking-main-row">
+
+    <!-- ── 1. LEFT SIDE — SERVICE SEATS (EXACTLY 2 SERVICE SEATS) ── -->
+    <section class="booking-col booking-col-seats">
+      <div class="booking-col-header">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-chair text-primary me-2"></i>SERVICE SEATS</h5>
+        <span class="badge bg-light text-dark border"><span style="color:#10b981;">●</span> 2 Service Seats</span>
+      </div>
+      <div class="booking-col-body" id="admin-seats-container">
+        <!-- Dynamically populated by renderAdminSeats() -->
+        <div class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading service seats…
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- ================= SECTION: QUEUE CENTER ================= -->
-    <div class="tab-section d-none" id="sec-queue">
-      <!-- Quick Queue KPI Strip -->
-      <div class="row g-3 mb-3">
-        <div class="col-6 col-md-3">
-          <div class="card card-dark p-3 text-center border-start border-warning border-3">
-            <div class="text-muted small text-uppercase fw-semibold">Waiting</div>
-            <div class="fs-3 fw-bold text-warning" id="kpi-queue-waiting">0</div>
+    <!-- ── 2. CENTER — TIME SLOTS / BOOKINGS ── -->
+    <section class="booking-col booking-col-slots">
+      <div class="booking-col-header">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-calendar-check text-primary me-2"></i>TIME SLOTS / BOOKINGS</h5>
+        <div class="d-flex align-items-center gap-1">
+          <!-- Date Filter Buttons -->
+          <div class="slot-date-bar mb-0" style="padding:0;background:transparent;border:none;">
+            <button class="slot-date-btn active" id="admin-btn-date-today" onclick="selectAdminDateFilter('today')">Today</button>
+            <button class="slot-date-btn" id="admin-btn-date-tomorrow" onclick="selectAdminDateFilter('tomorrow')">Tomorrow</button>
+            <button class="slot-date-btn" id="admin-btn-date-dayafter" onclick="selectAdminDateFilter('dayafter')">Day After</button>
           </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card card-dark p-3 text-center border-start border-info border-3">
-            <div class="text-muted small text-uppercase fw-semibold">Called</div>
-            <div class="fs-3 fw-bold text-info" id="kpi-queue-called">0</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card card-dark p-3 text-center border-start border-primary border-3">
-            <div class="text-muted small text-uppercase fw-semibold">In Chair (Seated)</div>
-            <div class="fs-3 fw-bold text-primary" id="kpi-queue-seated">0</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card card-dark p-3 text-center border-start border-success border-3">
-            <div class="text-muted small text-uppercase fw-semibold">Served Today</div>
-            <div class="fs-3 fw-bold text-success" id="kpi-queue-served">0</div>
-          </div>
+          <input type="date" id="admin-slot-picker-date" class="form-control form-control-sm border-secondary ms-1" style="width:125px;font-size:0.75rem;" onchange="onAdminDateChanged(this.value)">
         </div>
       </div>
+      <div class="booking-col-body" id="admin-slots-list">
+        <!-- Dynamically populated by renderAdminSlots() -->
+        <div class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading time slots & bookings…
+        </div>
+      </div>
+    </section>
 
-      <div class="card card-dark shadow-sm">
-        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <!-- ── 3. RIGHT SIDE — WAITING QUEUE (STRICT FIFO) ── -->
+    <section class="booking-col booking-col-queue">
+      <div class="booking-col-header">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-users text-primary me-2"></i>WAITING QUEUE</h5>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold" style="font-size: 0.72rem;">
+          Strict FIFO
+        </span>
+      </div>
+      <div class="booking-col-body">
+        <!-- Live Waiting Counter Box -->
+        <div class="queue-counter-box">
           <div>
-            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-ol me-2 text-danger"></i>Queue Management Center</h5>
-            <small class="text-muted">Manage tokens through Waiting → Called → Seated → Served lifecycle</small>
+            <div class="text-muted small fw-bold">WAITING QUEUE</div>
+            <div class="small text-muted" style="font-size:0.75rem;">First-In, First-Out Order</div>
           </div>
-          <div class="d-flex gap-2">
-            <button class="btn btn-outline-light btn-sm" onclick="fetchQueueList()"><i class="fa-solid fa-rotate me-1"></i>Refresh</button>
-            <button class="btn btn-danger btn-sm fw-bold" onclick="callNextQueue()"><i class="fa-solid fa-volume-high me-1"></i>Call Next Waiting</button>
+          <div>
+            <span class="text-muted small me-1">Waiting:</span>
+            <span class="queue-counter-number" id="admin-waiting-queue-count">0</span>
           </div>
         </div>
 
-        <div class="card-body">
-          <!-- Queue Status Filter Pills -->
-          <div class="d-flex flex-wrap gap-2 mb-3" id="queue-filter-tabs">
-            <button class="btn btn-sm btn-light active queue-filter-btn" data-filter="all" onclick="filterQueueTable('all')">
-              All Tokens <span class="badge bg-dark ms-1" id="q-cnt-all">0</span>
-            </button>
-            <button class="btn btn-sm btn-outline-warning queue-filter-btn" data-filter="waiting" onclick="filterQueueTable('waiting')">
-              <i class="fa-solid fa-clock me-1"></i>Waiting <span class="badge bg-warning text-dark ms-1" id="q-cnt-waiting">0</span>
-            </button>
-            <button class="btn btn-sm btn-outline-info queue-filter-btn" data-filter="called" onclick="filterQueueTable('called')">
-              <i class="fa-solid fa-volume-high me-1"></i>Called <span class="badge bg-info text-dark ms-1" id="q-cnt-called">0</span>
-            </button>
-            <button class="btn btn-sm btn-outline-primary queue-filter-btn" data-filter="serving" onclick="filterQueueTable('serving')">
-              <i class="fa-solid fa-scissors me-1"></i>Seated (In Service) <span class="badge bg-primary ms-1" id="q-cnt-serving">0</span>
-            </button>
-            <button class="btn btn-sm btn-outline-success queue-filter-btn" data-filter="completed" onclick="filterQueueTable('completed')">
-              <i class="fa-solid fa-check me-1"></i>Served (Completed) <span class="badge bg-success ms-1" id="q-cnt-completed">0</span>
-            </button>
-          </div>
-
-          <div class="table-responsive">
-            <table class="table table-dark table-striped table-hover table-dark-custom align-middle">
-              <thead>
-                <tr>
-                  <th style="width: 80px;">Token</th>
-                  <th>Customer</th>
-                  <th>Service</th>
-                  <th>Chair / Station</th>
-                  <th>Wait / Elapsed</th>
-                  <th>Status</th>
-                  <th style="min-width: 180px;">Lifecycle Actions</th>
-                </tr>
-              </thead>
-              <tbody id="tbl-queue-body">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
+        <!-- FIFO Queue List -->
+        <div id="admin-waiting-queue-list">
+          <!-- Dynamically populated by renderAdminQueue() -->
+          <div class="text-center py-4 text-muted small">
+            <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading waiting queue…
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- ================= SECTION: CHAIRS ================= -->
-    <div class="tab-section d-none" id="sec-chairs">
-      <div class="card card-dark shadow-sm mb-4">
-        <div class="card-header">
-          <h5 class="mb-0 fw-bold">Chair List & Service Maintenance</h5>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-dark table-striped table-hover table-dark-custom align-middle">
-              <thead>
-                <tr>
-                  <th>Number</th>
-                  <th>Chair Name</th>
-                  <th>Current Status</th>
-                  <th>Temporary Reserved By</th>
-                  <th>Change Status Actions</th>
-                </tr>
-              </thead>
-              <tbody id="tbl-chairs-body">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Add New Chair Form -->
-      <div class="card card-dark shadow-sm" style="max-width: 500px;">
-        <div class="card-header"><h5 class="mb-0 fw-bold">Add New Chair Station</h5></div>
-        <div class="card-body">
-          <form onsubmit="handleCreateChair(event)">
-            <div class="row g-3">
-              <div class="col-6">
-                <label for="chair-number" class="form-label">Chair Number</label>
-                <input type="number" class="form-control bg-dark text-white border-secondary" id="chair-number" required placeholder="e.g. 9" min="1">
-              </div>
-              <div class="col-6">
-                <label for="chair-name" class="form-label">Chair Station Name</label>
-                <input type="text" class="form-control bg-dark text-white border-secondary" id="chair-name" placeholder="e.g. Chair 9">
-              </div>
-            </div>
-            <button type="submit" class="btn btn-danger btn-sm fw-bold w-100 mt-3">Add Station</button>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- ================= SECTION: SERVICES ================= -->
-    <div class="tab-section d-none" id="sec-services">
-      <div class="card card-dark shadow-sm mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0 fw-bold">Active Service Menu</h5>
-          <button class="btn btn-danger btn-sm fw-bold" onclick="openAddServiceModal()"><i class="fa-solid fa-plus me-1"></i>Add New Service</button>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-dark table-striped table-hover table-dark-custom align-middle">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Category</th>
-                  <th>Duration</th>
-                  <th>Price</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="tbl-services-body">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ================= SECTION: CUSTOMERS ================= -->
-    <div class="tab-section d-none" id="sec-customers">
-      <div class="card card-dark shadow-sm">
-        <div class="card-header"><h5 class="mb-0 fw-bold">Customer Account Management</h5></div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-dark table-striped table-hover table-dark-custom align-middle">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone Number</th>
-                  <th>Gender</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="tbl-customers-body">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ================= SECTION: REPORTS ================= -->
-    <div class="tab-section d-none" id="sec-reports">
-      <!-- Report selection cards -->
-      <div class="row g-4 mb-4">
-        <div class="col-md-3">
-          <div class="card card-dark text-center p-3 cursor-pointer border border-secondary" onclick="fetchDailyReport()">
-            <i class="fa-solid fa-calendar-day text-danger display-6 mb-2"></i>
-            <h6 class="fw-bold">Daily Report</h6>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card card-dark text-center p-3 cursor-pointer border border-secondary" onclick="fetchMonthlyReport()">
-            <i class="fa-solid fa-calendar-days text-danger display-6 mb-2"></i>
-            <h6 class="fw-bold">Monthly Report</h6>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card card-dark text-center p-3 cursor-pointer border border-secondary" onclick="fetchChairsUtilization()">
-            <i class="fa-solid fa-chart-pie text-danger display-6 mb-2"></i>
-            <h6 class="fw-bold">Chair Utilization</h6>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card card-dark text-center p-3 cursor-pointer border border-secondary" onclick="fetchPeakHoursReport()">
-            <i class="fa-solid fa-hourglass-half text-danger display-6 mb-2"></i>
-            <h6 class="fw-bold">Peak Booking Hours</h6>
-          </div>
-        </div>
-      </div>
-
-      <!-- Report Display Window -->
-      <div class="card card-dark shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0 fw-bold" id="report-window-title">Select report to generate</h5>
-          <div id="report-filter-controls"></div>
-        </div>
-        <div class="card-body" id="report-window-body">
-          <div class="text-center py-5 text-muted">
-            <i class="fa-solid fa-file-chart-pie display-3 mb-3 text-secondary"></i>
-            <p>Select a report category above to fetch database analytical logs.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    </section>
 
   </main>
 
-  <!-- Add/Edit Service Modal -->
-  <div class="modal fade" id="serviceModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-dark text-white border-secondary">
-        <div class="modal-header border-secondary">
-          <h5 class="modal-title fw-bold" id="serviceModalLabel">Grooming Service Form</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+  <!-- ═══════════════════════════════════════════════════════════════
+       FINISH SERVICE CONFIRMATION MODAL
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="modal fade" id="finishServiceModal" tabindex="-1" aria-labelledby="finishServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-danger text-white py-2.5 px-3">
+          <h6 class="modal-title fw-bold" id="finishServiceModalLabel">
+            <i class="fa-solid fa-circle-check me-1.5"></i>Finish Service
+          </h6>
+          <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
-          <form onsubmit="handleSaveService(event)">
-            <input type="hidden" id="service-form-id">
-            
-            <div class="mb-3">
-              <label for="service-name" class="form-label">Service Name</label>
-              <input type="text" class="form-control bg-dark border-secondary text-white" id="service-name" required placeholder="e.g. Vintage Shave">
-            </div>
-
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="service-duration" class="form-label">Duration (Minutes)</label>
-                <input type="number" class="form-control bg-dark border-secondary text-white" id="service-duration" required placeholder="30" min="5">
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="service-price" class="form-label">Price ($)</label>
-                <input type="number" class="form-control bg-dark border-secondary text-white" id="service-price" required placeholder="25.00" min="0" step="0.01">
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <label for="service-category" class="form-label">Category</label>
-              <select class="form-select bg-dark border-secondary text-white" id="service-category">
-                <option value="haircut">Haircuts</option>
-                <option value="beard">Beard & Shave</option>
-                <option value="vip">VIP Packages</option>
-                <option value="facial">Scalp & Facial</option>
-              </select>
-            </div>
-
-            <div class="mb-3">
-              <label for="service-desc" class="form-label">Description</label>
-              <textarea class="form-control bg-dark border-secondary text-white" id="service-desc" rows="3"></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold">Save Service</button>
-          </form>
+        <div class="modal-body p-3">
+          <p class="small text-secondary mb-2">Are you sure you want to finish service for:</p>
+          <div class="p-2 rounded bg-light border mb-2 text-center">
+            <div class="fw-bold text-dark fs-6" id="finish-customer-name">Customer Name</div>
+            <div class="text-primary small fw-semibold" id="finish-seat-name">Seat 1</div>
+          </div>
+          <p class="text-muted mb-0" style="font-size: 0.78rem;">
+            <i class="fa-solid fa-circle-info text-info me-1"></i>
+            This will mark the service <strong>COMPLETED</strong>, free the seat, and <strong>automatically assign the next waiting customer</strong> from the queue.
+          </p>
+        </div>
+        <div class="modal-footer p-2 bg-light d-flex justify-content-end gap-1">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-sm btn-danger fw-bold" id="btn-confirm-finish" onclick="executeFinishService()">
+            <i class="fa-solid fa-check me-1"></i>Complete Service
+          </button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Toast Notification Container -->
-  <div class="toast-container" id="toast-container"></div>
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;" id="toast-container"></div>
 
-  <!-- Scripts -->
-
-  <!-- Bootstrap Bundle JS -->
+  <!-- Bootstrap 5 Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Core Auth JS -->
   <script src="/js/auth.js"></script>
+  <!-- Dedicated Admin Dashboard JS -->
   <script src="/js/admin.js"></script>
-  <script>
-    checkAuth('admin');
-  </script>
 </body>
 </html>

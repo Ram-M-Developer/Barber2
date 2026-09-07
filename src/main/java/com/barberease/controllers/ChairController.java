@@ -176,8 +176,20 @@ public class ChairController {
         return ResponseEntity.ok(body);
     }
 
+    private void verifyAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal)) {
+            throw new org.springframework.security.access.AccessDeniedException("Admin authentication required");
+        }
+        UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
+        if (!"admin".equalsIgnoreCase(principal.getType()) && !"admin".equalsIgnoreCase(principal.getRole())) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Admin role required");
+        }
+    }
+
     @PostMapping("/{id}/complete-service")
     public ResponseEntity<Map<String, Object>> completeService(@PathVariable Long id) {
+        verifyAdmin();
         Chair chair = appointmentService.completeSeatService(id);
 
         Map<String, Object> body = new HashMap<>();
