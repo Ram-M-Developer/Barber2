@@ -280,8 +280,44 @@ public class AppointmentService {
             "03:00 PM - 04:00 PM",
             "04:00 PM - 05:00 PM",
             "05:00 PM - 06:00 PM",
-            "06:00 PM - 07:00 PM"
+            "06:00 PM - 07:00 PM",
+            "07:00 PM - 08:00 PM",
+            "08:00 PM - 09:00 PM",
+            "09:00 PM - 10:00 PM"
     );
+
+    public List<String> generateDynamicSlots(LocalDate date) {
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+        int openHour = 9;   // 09:00 AM
+        int closeHour = 22; // 10:00 PM
+
+        List<String> slots = new ArrayList<>();
+        if (date.isBefore(today)) {
+            return slots;
+        }
+
+        int startHour = openHour;
+        if (date.isEqual(today)) {
+            if (now.getHour() >= openHour) {
+                if (now.getMinute() == 0) {
+                    startHour = now.getHour();
+                } else {
+                    startHour = now.getHour() + 1;
+                }
+            }
+        }
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("hh:mm a");
+        for (int h = startHour; h < closeHour; h++) {
+            LocalTime start = LocalTime.of(h, 0);
+            LocalTime end = start.plusMinutes(60);
+            String slotStr = start.format(fmt) + " - " + end.format(fmt);
+            slots.add(slotStr);
+        }
+
+        return slots;
+    }
 
     public static boolean slotMatches(String apptSlot, String standardSlot) {
         if (apptSlot == null || standardSlot == null) return false;
@@ -302,7 +338,12 @@ public class AppointmentService {
         List<Map<String, Object>> result = new ArrayList<>();
         int totalCapacity = 2; // Exactly 2 seats
 
-        for (String slot : STANDARD_TIME_SLOTS) {
+        List<String> slotsToDisplay = generateDynamicSlots(date);
+        if (slotsToDisplay.isEmpty() && date.isAfter(LocalDate.now())) {
+            slotsToDisplay = STANDARD_TIME_SLOTS;
+        }
+
+        for (String slot : slotsToDisplay) {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("timeSlot", slot);
             map.put("capacity", totalCapacity);
@@ -358,9 +399,22 @@ public class AppointmentService {
             Customer customer = customerRepository.findById(customerId)
                     .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
 
+            // 1. Check if customer is already occupying an active seat right now
+            boolean isSeated = chairRepository.findAll().stream()
+                    .anyMatch(c -> c.getReservedByCustomer() != null && c.getReservedByCustomer().getId().equals(customerId));
+            if (isSeated) {
+                throw new IllegalStateException("You are already occupying an active service seat.");
+            }
+
+            // 2. Check if customer is already waiting in the digital queue
+            boolean isInQueue = queueRepository.findByCustomerIdAndStatusIn(customerId, Arrays.asList("waiting", "called")).isPresent();
+            if (isInQueue) {
+                throw new IllegalStateException("You are already in the waiting queue.");
+            }
+
             List<Appointment> allDateAppts = appointmentRepository.findByAppointmentDateOrderByTimeSlotAsc(date);
 
-            // Concurrency check: check if customer is already booked for this slot
+            // 3. Check if customer already has a booking on this date
             for (Appointment a : allDateAppts) {
                 if (activeStatuses.contains(a.getStatus()) && a.getCustomer() != null && a.getCustomer().getId().equals(customerId)) {
                     if (slotMatches(a.getTimeSlot(), timeSlot)) {

@@ -154,7 +154,8 @@ function renderSeats() {
 
   const renderSeatCard = (seat, seatNum) => {
     let statusClass = 'available';
-    let statusLabel = '🟢 AVAILABLE';
+    let statusBadgeText = '🟢 AVAILABLE';
+    let statusMetaText = 'AVAILABLE';
 
     const custName = seat.customer_name && seat.customer_name !== '---' 
       ? seat.customer_name 
@@ -164,25 +165,19 @@ function renderSeats() {
 
     if (seat.status === 'occupied' || (custName !== '---' && seat.status !== 'waiting')) {
       statusClass = 'occupied';
-      statusLabel = '🔴 OCCUPIED';
+      statusBadgeText = '🔴 OCCUPIED';
+      statusMetaText = 'OCCUPIED';
     } else if (seat.status === 'waiting' || seat.status === 'called') {
       statusClass = 'waiting';
-      statusLabel = '🟡 WAITING / NEXT CUSTOMER';
+      statusBadgeText = '🟡 WAITING';
+      statusMetaText = 'WAITING / NEXT CUSTOMER';
     }
 
-    let adminActionBtn = '';
-    if (isAdmin && (statusClass === 'occupied' || statusClass === 'waiting')) {
-      adminActionBtn = `
+    let completeBtn = '';
+    if (statusClass === 'occupied') {
+      completeBtn = `
         <div class="mt-2 pt-2 border-top">
           <button type="button" class="btn btn-sm btn-outline-danger w-100 fw-bold py-1" onclick="handleCompleteSeat(${seat.id})" style="font-size:0.75rem;">
-            <i class="fa-solid fa-circle-check me-1"></i>Complete Service
-          </button>
-        </div>
-      `;
-    } else if (statusClass === 'occupied') {
-      adminActionBtn = `
-        <div class="mt-2 pt-2 border-top">
-          <button type="button" class="btn btn-sm btn-outline-secondary w-100 py-1" onclick="handleCompleteSeat(${seat.id})" style="font-size:0.72rem;">
             <i class="fa-solid fa-circle-check me-1"></i>[Complete Service]
           </button>
         </div>
@@ -193,9 +188,9 @@ function renderSeats() {
       <div class="seat-card-compact ${statusClass}">
         <div class="seat-title-row">
           <div class="seat-name">
-            🪑 Seat ${seatNum}
+            Seat ${seatNum}
           </div>
-          <span class="seat-status-badge ${statusClass}">${statusLabel}</span>
+          <span class="seat-status-badge ${statusClass}">${statusBadgeText}</span>
         </div>
         <div class="seat-meta-row">
           <span class="seat-meta-label">Customer:</span>
@@ -207,9 +202,9 @@ function renderSeats() {
         </div>
         <div class="seat-meta-row">
           <span class="seat-meta-label">Status:</span>
-          <span class="seat-meta-val text-uppercase">${seat.status.toUpperCase()}</span>
+          <span class="seat-meta-val text-uppercase">${statusMetaText}</span>
         </div>
-        ${adminActionBtn}
+        ${completeBtn}
       </div>
     `;
   };
@@ -218,6 +213,36 @@ function renderSeats() {
 }
 window.renderSeats = renderSeats;
 window.fetchSeats = fetchChairs;
+
+// Complete seat service handler (Admin action)
+async function handleCompleteSeat(chairId) {
+  if (!confirm(`Complete service for Seat ${chairId}? This will free the seat and automatically seat the first waiting customer from the FIFO queue.`)) {
+    return;
+  }
+  try {
+    const adminToken = localStorage.getItem('barber_admin_token');
+    const custToken = localStorage.getItem('barber_token');
+    const token = adminToken || custToken;
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+    const res = await fetch(`/api/chairs/${chairId}/complete-service`, {
+      method: 'POST',
+      headers: headers
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Failed to complete service on seat.');
+    }
+    showToast(data.message || 'Seat service completed and next customer seated!', 'success');
+    fetchChairs();
+    fetchTimeSlots(selectedDate);
+    fetchWaitingQueue();
+  } catch (err) {
+    console.error('Error completing seat service:', err);
+    showToast(err.message, 'danger');
+  }
+}
+window.handleCompleteSeat = handleCompleteSeat;
 
 // 2. CENTER: Fetch & Render Available & Booked Time Slots with Dynamic 2-Seat Capacity
 async function fetchTimeSlots(date) {
@@ -250,60 +275,68 @@ function renderTimeSlots() {
   if (!listEl) return;
 
   if (!currentSlots || currentSlots.length === 0) {
-    listEl.innerHTML = `<div class="text-center py-4 text-muted small">No slots available for this date.</div>`;
+    listEl.innerHTML = `
+      <div class="text-center py-5 text-muted small bg-light rounded border p-4">
+        <i class="fa-regular fa-clock fs-2 text-secondary mb-2 d-block"></i>
+        <div class="fw-bold text-dark">No more slots for today</div>
+        <div class="text-muted mt-1" style="font-size:0.75rem;">All daytime service windows have elapsed. Select <strong>Tomorrow</strong> for upcoming slots.</div>
+      </div>
+    `;
     return;
   }
 
   listEl.innerHTML = currentSlots.map(s => {
-    const isFull = s.isFull || s.status === 'full' || s.availableCount === 0;
-    const availCount = s.availableCount != null ? s.availableCount : (s.status === 'available' ? 2 : 0);
+    const assignedCount = s.assignedCount != null ? s.assignedCount : 0;
+    const isFull = s.isFull || assignedCount >= 2;
 
-    let badgePill = '';
+    let capacityLabel = `${assignedCount} / 2 Seats Filled`;
+    let statusPill = '';
     let actionBtn = '';
 
-    if (!isFull) {
-      if (availCount === 2) {
-        badgePill = `<span class="slot-badge-pill available-2"><i class="fa-solid fa-circle" style="font-size:0.45rem;"></i> Available: 2 / 2</span>`;
-      } else {
-        badgePill = `<span class="slot-badge-pill available-1"><i class="fa-solid fa-circle" style="font-size:0.45rem;"></i> Available: 1 / 2</span>`;
-      }
-
-      if (s.isCurrentCustomer) {
-        actionBtn = `
-          <button type="button" class="btn btn-sm btn-outline-success fw-bold py-1 px-3" disabled style="font-size:0.75rem;">
-            <i class="fa-solid fa-check me-1"></i>Your Booking
-          </button>
-        `;
-      } else {
-        actionBtn = `
-          <button type="button" class="btn btn-sm btn-primary fw-bold py-1 px-3" onclick="openSlotBookingModal('${s.timeSlot}')" style="font-size:0.75rem;">
-            <i class="fa-solid fa-calendar-check me-1"></i>Book
-          </button>
-        `;
-      }
+    if (assignedCount === 0) {
+      statusPill = `<span class="slot-badge-pill available-2"><i class="fa-solid fa-circle" style="font-size:0.45rem;"></i> AVAILABLE</span>`;
+      actionBtn = `
+        <button type="button" class="btn btn-sm btn-primary fw-bold py-1 px-3" onclick="openSlotBookingModal('${s.timeSlot}')" style="font-size:0.75rem;">
+          <i class="fa-solid fa-calendar-check me-1"></i>Book
+        </button>
+      `;
+    } else if (assignedCount === 1) {
+      statusPill = `<span class="slot-badge-pill available-1"><i class="fa-solid fa-circle" style="font-size:0.45rem;"></i> 1 SEAT AVAILABLE</span>`;
+      actionBtn = `
+        <button type="button" class="btn btn-sm btn-primary fw-bold py-1 px-3" onclick="openSlotBookingModal('${s.timeSlot}')" style="font-size:0.75rem;">
+          <i class="fa-solid fa-calendar-check me-1"></i>Book
+        </button>
+      `;
     } else {
-      badgePill = `<span class="slot-badge-pill full"><i class="fa-solid fa-lock" style="font-size:0.5rem;"></i> 2 / 2 Seats Filled 🔴 Full</span>`;
+      statusPill = `<span class="slot-badge-pill full"><i class="fa-solid fa-lock" style="font-size:0.5rem;"></i> FULL</span>`;
+      actionBtn = `
+        <div class="d-flex gap-1 align-items-center">
+          <button type="button" class="btn btn-sm btn-secondary fw-bold py-1 px-2.5" disabled style="font-size:0.72rem;" title="2 / 2 Seats Filled">
+            <i class="fa-solid fa-lock me-1"></i>Book Locked
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary fw-bold py-1 px-2" onclick="openQueueModal()" style="font-size:0.72rem;" title="Join FIFO Waiting Queue">
+            Join Queue
+          </button>
+        </div>
+      `;
+    }
 
-      if (s.isCurrentCustomer) {
-        actionBtn = `
-          <button type="button" class="btn btn-sm btn-outline-danger fw-bold py-1 px-3" disabled style="font-size:0.75rem;">
-            <i class="fa-solid fa-check me-1"></i>Your Booking
-          </button>
-        `;
-      } else {
-        actionBtn = `
-          <button type="button" class="btn btn-sm btn-outline-primary fw-bold py-1 px-2.5" onclick="openQueueModal()" style="font-size:0.75rem;">
-            <i class="fa-solid fa-users me-1"></i>Join Queue
-          </button>
-        `;
-      }
+    if (s.isCurrentCustomer) {
+      actionBtn = `
+        <button type="button" class="btn btn-sm btn-outline-success fw-bold py-1 px-2.5" disabled style="font-size:0.75rem;">
+          <i class="fa-solid fa-check me-1"></i>Your Booking
+        </button>
+      `;
     }
 
     return `
       <div class="slot-capacity-card ${isFull ? 'full' : ''}">
         <div>
           <div class="slot-time-title">${s.timeSlot}</div>
-          <div class="mt-1">${badgePill}</div>
+          <div class="d-flex align-items-center gap-2 mt-1">
+            <span class="text-secondary fw-semibold small" style="font-size:0.78rem;">${capacityLabel}</span>
+            ${statusPill}
+          </div>
         </div>
         <div>
           ${actionBtn}
@@ -340,7 +373,7 @@ function renderWaitingQueue() {
     listEl.innerHTML = `
       <div class="text-center py-4 text-muted small bg-light rounded border p-3">
         <i class="fa-solid fa-mug-hot fs-3 text-secondary d-block mb-2"></i>
-        <div class="fw-bold text-dark">No customers waiting</div>
+        <div class="fw-bold text-dark fs-6 mb-1">No customers waiting</div>
         <div class="text-muted" style="font-size:0.75rem;">New bookings receive direct seat allocation.</div>
       </div>
     `;
@@ -355,7 +388,7 @@ function renderWaitingQueue() {
         <div class="d-flex align-items-center min-w-0">
           <div class="queue-rank-badge">${idx + 1}</div>
           <div class="text-truncate">
-            <div class="fw-bold text-dark text-truncate" style="font-size:0.84rem;">${custName}</div>
+            <div class="fw-bold text-dark text-truncate" style="font-size:0.84rem;">${idx + 1}. ${custName}</div>
             <div class="text-muted" style="font-size:0.72rem;">Token: ${tokNum}</div>
           </div>
         </div>
@@ -1296,6 +1329,13 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchTimeSlots();
   fetchWaitingQueue();
   setupSockets();
+
+  // Periodic check every 15s so expired slots roll off automatically when current hour changes
+  setInterval(() => {
+    fetchChairs();
+    fetchTimeSlots(selectedDate);
+    fetchWaitingQueue();
+  }, 15000);
 });
 
 // Fetch wallet balance

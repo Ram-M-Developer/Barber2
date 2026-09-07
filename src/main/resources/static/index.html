@@ -3,230 +3,315 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BarberEase – Studio Appointment & Waiting Lounge System</title>
-  <meta name="description" content="BarberEase – Schedule appointment slots, view real-time station availability, and track your waiting lounge position.">
+  <title>BarberEase – 2-Seat Service Booking &amp; Waiting Queue</title>
+  <meta name="description" content="Real-time 2-seat customer assignment, dynamic upcoming time slots, and FIFO waiting queue system.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    .landing-hero {
-      background:
-        radial-gradient(ellipse at 50% 10%, rgba(37, 99, 235, 0.08) 0%, transparent 65%),
-        linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-      padding: 7rem 0 5rem;
-      border-bottom: 1px solid var(--be-border);
-    }
-    .landing-feature-card {
-      background: var(--be-card);
-      border: 1px solid var(--be-border);
-      border-radius: var(--be-radius);
-      transition: var(--be-transition);
-    }
-    .landing-feature-card:hover {
-      border-color: #3b82f6;
-      background: var(--be-card-hover);
-      transform: translateY(-4px);
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
     }
   </style>
 </head>
-<body style="background-color: var(--be-dark);">
-  <!-- ═══ FACEBOOK TOP NAVIGATION BAR ═══ -->
-  <nav class="fb-navbar fixed-top d-flex align-items-center justify-content-between">
-    <!-- Left: Brand Logo -->
-    <div class="d-flex align-items-center gap-3">
-      <a class="fb-brand" href="/">
-        <div class="fb-logo-icon">
+<body class="booking-page-root">
+
+  <!-- ═══ TOP NAVIGATION BAR (COMPACT & FIXED 52PX) ═══ -->
+  <nav class="navbar navbar-expand bg-white border-bottom px-3 py-2 flex-shrink-0" style="height: 52px; z-index: 1000;">
+    <div class="container-fluid px-0 d-flex justify-content-between align-items-center">
+      <!-- Brand Logo -->
+      <a class="navbar-brand d-flex align-items-center gap-2 m-0 p-0 text-decoration-none" href="/">
+        <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded" style="width: 32px; height: 32px; font-size: 1rem;">
           <i class="fa-solid fa-scissors"></i>
         </div>
-        <span class="d-none d-sm-inline fw-bold">BarberEase</span>
+        <span class="fw-bold fs-6 text-dark tracking-tight">BarberEase</span>
+        <span class="badge bg-light text-secondary border ms-1 d-none d-md-inline" style="font-size: 0.72rem;">2 Seats · FIFO Queue</span>
       </a>
-      <div class="fb-search-bar d-none d-md-flex">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" placeholder="Explore services & stations..." />
+
+      <!-- Center Status / Real-Time Live Clock -->
+      <div class="d-none d-lg-flex align-items-center gap-3">
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;">
+          <span class="ws-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;"></span>
+          <span id="ws-status-text">Live Synchronized</span>
+        </span>
+        <div class="text-muted small fw-semibold d-flex align-items-center gap-1.5" style="font-size: 0.8rem;">
+          <i class="fa-regular fa-clock text-primary"></i>
+          <span id="current-clock-label">--:-- --</span>
+          <span class="text-secondary mx-1">·</span>
+          <span id="current-date-label">Today</span>
+        </div>
       </div>
-    </div>
 
-    <!-- Center: Links -->
-    <div class="d-none d-md-flex align-items-center gap-3">
-      <a href="#services" class="text-decoration-none text-muted fw-semibold small">Services</a>
-      <a href="#stations" class="text-decoration-none text-muted fw-semibold small">2 Main Stations</a>
-      <a href="/customer/queue.html" class="text-decoration-none text-muted fw-semibold small">Live Queue</a>
-    </div>
-
-    <!-- Right: Auth Action Buttons -->
-    <div class="fb-right-actions">
-      <a class="fb-btn-secondary text-decoration-none" href="/auth/login.html">Log In</a>
-      <a class="fb-btn-primary text-decoration-none" href="/auth/register.html">Sign Up</a>
+      <!-- Right User / Auth Controls -->
+      <div class="d-flex align-items-center gap-2" id="navbar-auth-section">
+        <!-- Populated dynamically by auth state in JS -->
+        <a href="/auth/login.html" class="btn btn-sm btn-outline-primary py-1 px-3" style="font-size: 0.78rem;">Log In</a>
+        <a href="/auth/register.html" class="btn btn-sm btn-primary py-1 px-3 text-white" style="font-size: 0.78rem;">Sign Up</a>
+        <a href="/auth/admin-login.html" class="btn btn-sm btn-outline-secondary py-1 px-2 text-decoration-none" title="Admin Portal" style="font-size: 0.78rem;">
+          <i class="fa-solid fa-shield-halved me-1 text-primary"></i>Admin
+        </a>
+      </div>
     </div>
   </nav>
 
-  <!-- Hero Section -->
-  <section class="landing-hero d-flex align-items-center" id="hero" style="margin-top: 56px;">
-    <div class="container">
-      <div class="row align-items-center g-5">
-        <div class="col-lg-7">
-          <span class="badge mb-3 px-3 py-2 fw-bold" style="background:rgba(37,99,235,0.1);color:var(--be-primary);border:1px solid rgba(37,99,235,0.25)">
-            EXECUTIVE BARBER SYSTEM
-          </span>
-          <h1 class="display-4 fw-bold text-dark mb-3" style="letter-spacing:-0.5px">
-            Craftsmanship &amp; Precision.<br>
-            <span style="color:var(--be-primary)">No Waiting In Line.</span>
-          </h1>
-          <p class="lead text-muted mb-4" style="font-size:1.05rem;line-height:1.7">
-            Directly select Main Service Station 1 or Station 2, book guaranteed time slots, or take a seat in our digital waiting lounge with live status updates.
-          </p>
-          <div class="d-flex gap-3 flex-wrap">
-            <a href="/auth/register.html" class="fb-btn-primary btn-lg px-4 py-2 text-decoration-none">
-              <i class="fa-solid fa-calendar-check me-2"></i>Book Station Chair
-            </a>
-            <a href="/customer/dashboard.html" class="fb-btn-secondary btn-lg px-4 py-2 text-decoration-none">
-              <i class="fa-solid fa-chair me-2" style="color:var(--be-primary)"></i>View Live Seats
-            </a>
-          </div>
+  <!-- ═══ FIXED 3-COLUMN MAIN LAYOUT (STRICT VIEWPORT FIT, NO PAGE SCROLL) ═══ -->
+  <main class="booking-main-row">
 
-          <!-- Live Key Metrics -->
-          <div class="row mt-5 g-3 text-center">
-            <div class="col-3">
-              <div class="p-3 rounded" style="background:#ffffff;border:1px solid var(--be-border)">
-                <h3 class="fw-bold mb-0 text-dark">2</h3>
-                <small class="text-muted" style="font-size:0.75rem">Main Stations</small>
-              </div>
-            </div>
-            <div class="col-3">
-              <div class="p-3 rounded" style="background:#ffffff;border:1px solid var(--be-border)">
-                <h3 class="fw-bold mb-0 text-dark">6</h3>
-                <small class="text-muted" style="font-size:0.75rem">Waiting Chairs</small>
-              </div>
-            </div>
-            <div class="col-3">
-              <div class="p-3 rounded" style="background:#ffffff;border:1px solid var(--be-border)">
-                <h3 class="fw-bold mb-0 text-dark">100%</h3>
-                <small class="text-muted" style="font-size:0.75rem">Real-Time</small>
-              </div>
-            </div>
-            <div class="col-3">
-              <div class="p-3 rounded" style="background:#ffffff;border:1px solid var(--be-border)">
-                <h3 class="fw-bold mb-0 text-dark">5 min</h3>
-                <small class="text-muted" style="font-size:0.75rem">Hold Window</small>
-              </div>
-            </div>
+    <!-- ── 1. LEFT SIDE — SEATS (EXACTLY 2 SERVICE SEATS) ── -->
+    <section class="booking-col booking-col-seats">
+      <div class="booking-col-header">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-chair text-primary me-2"></i>SEATS</h5>
+        <span class="badge bg-light text-dark border"><span style="color:#10b981;">●</span> 2 Service Seats</span>
+      </div>
+      <div class="booking-col-body" id="seats-container">
+        <!-- Dynamically rendered by renderSeats() -->
+        <div class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading seats…
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 2. CENTER — AVAILABLE TIME SLOTS (DYNAMIC UPCOMING SLOTS) ── -->
+    <section class="booking-col booking-col-slots">
+      <div class="booking-col-header">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-calendar-check text-primary me-2"></i>AVAILABLE TIME SLOTS</h5>
+        <div class="d-flex align-items-center gap-1">
+          <!-- Date Filter Buttons -->
+          <div class="slot-date-bar mb-0" style="padding:0;background:transparent;border:none;">
+            <button class="slot-date-btn active" id="btn-date-today" onclick="selectDateFilter('today')">Today</button>
+            <button class="slot-date-btn" id="btn-date-tomorrow" onclick="selectDateFilter('tomorrow')">Tomorrow</button>
+            <button class="slot-date-btn" id="btn-date-dayafter" onclick="selectDateFilter('dayafter')">Day After</button>
+          </div>
+          <input type="date" id="slot-picker-date" class="form-control form-control-sm border-secondary ms-1" style="width:125px;font-size:0.75rem;" onchange="onDateChanged(this.value)">
+        </div>
+      </div>
+      <div class="booking-col-body" id="time-slots-list">
+        <!-- Dynamically rendered by renderTimeSlots() -->
+        <div class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading upcoming time slots…
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 3. RIGHT SIDE — WAITING LIST (FIFO QUEUE) ── -->
+    <section class="booking-col booking-col-queue">
+      <div class="booking-col-header">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-users text-primary me-2"></i>WAITING LIST</h5>
+        <button class="btn btn-sm btn-primary fw-bold py-1 px-2.5" onclick="openQueueModal()" style="font-size: 0.75rem;">
+          <i class="fa-solid fa-plus me-1"></i>Join List
+        </button>
+      </div>
+      <div class="booking-col-body">
+        <!-- Live Waiting Counter Box -->
+        <div class="queue-counter-box">
+          <div>
+            <div class="text-muted small fw-bold">WAITING LIST</div>
+            <div class="small text-muted" style="font-size:0.75rem;">First-In, First-Out (FIFO)</div>
+          </div>
+          <div>
+            <span class="text-muted small me-1">Waiting:</span>
+            <span class="queue-counter-number" id="waiting-queue-count">0</span>
           </div>
         </div>
 
-        <div class="col-lg-5 text-center">
-          <div class="p-4 rounded-4" style="background:#ffffff;border:1px solid var(--be-border);box-shadow:var(--be-shadow-lg)">
-            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
-              <div class="fw-bold text-dark small"><i class="fa-solid fa-scissors me-2" style="color:var(--be-primary)"></i>Main Floor Overview</div>
-              <span class="badge" style="background:rgba(5,150,105,0.12);color:#059669">Live Floor</span>
-            </div>
-            <div class="d-flex flex-column gap-3">
-              <div class="p-3 rounded-3 text-start" style="background:rgba(37,99,235,0.06);border:1px solid rgba(37,99,235,0.2)">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="fw-bold text-dark small">Main Service Chair 1</span>
-                  <span class="badge" style="background:#2563eb;color:#fff">Station 1</span>
-                </div>
-                <small class="text-muted d-block">Available · 3 Waiting Chairs Attached</small>
-              </div>
-              <div class="p-3 rounded-3 text-start" style="background:#f8fafc;border:1px solid var(--be-border)">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="fw-bold text-dark small">Main Service Chair 2</span>
-                  <span class="badge" style="background:#64748b;color:#fff">Station 2</span>
-                </div>
-                <small class="text-muted d-block">Available · 3 Waiting Chairs Attached</small>
-              </div>
-            </div>
-            <a href="/auth/login.html" class="btn btn-primary w-100 mt-4 fw-bold py-2">
-              Access Client Portal
-            </a>
+        <!-- FIFO Waiting Queue List -->
+        <div id="waiting-queue-list">
+          <!-- Dynamically rendered by renderWaitingQueue() -->
+          <div class="text-center py-4 text-muted small">
+            <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading waiting list…
           </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MODALS
+  ════════════════════════════════════════════════════════════════ -->
+
+  <!-- ── 1. Direct Time Slot Booking Modal ── -->
+  <div class="modal fade" id="slotBookingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-bottom bg-light">
+          <h5 class="modal-title fw-bold text-dark fs-6">
+            <i class="fa-solid fa-calendar-check text-primary me-2"></i>Book Time Slot
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form onsubmit="handleConfirmSlotBooking(event)">
+            <input type="hidden" id="slot-modal-time">
+            <input type="hidden" id="slot-modal-date">
+
+            <!-- Highlighted Slot Banner -->
+            <div class="d-flex align-items-center justify-content-between p-3 rounded mb-3 bg-light border">
+              <div>
+                <span class="text-muted small d-block">Selected Time Slot:</span>
+                <strong class="fs-5 text-dark" id="slot-modal-display-time">--:--</strong>
+              </div>
+              <span class="badge bg-primary px-2.5 py-1.5 fs-7" id="slot-modal-display-date">Today</span>
+            </div>
+
+            <!-- Service select -->
+            <div class="mb-3">
+              <label for="slot-service-select" class="form-label fw-bold small text-muted">Select Service <span class="text-danger">*</span></label>
+              <select class="form-select" id="slot-service-select" required onchange="updateSlotModalPrice()">
+                <!-- Populated dynamically by JS -->
+              </select>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-3">
+              <label for="slot-notes" class="form-label fw-bold small text-muted">Notes (Optional)</label>
+              <input type="text" class="form-control" id="slot-notes" placeholder="e.g. Skin fade, beard sculpting">
+            </div>
+
+            <!-- Payment Method -->
+            <div class="mb-3">
+              <label class="form-label fw-bold small text-muted">Payment Method</label>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-primary flex-fill slot-pay-btn active" data-pay="cash" onclick="selectSlotPayment(this)">
+                  <i class="fa-solid fa-money-bill-wave me-1"></i>Pay in Shop
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary flex-fill slot-pay-btn" data-pay="wallet" onclick="selectSlotPayment(this)">
+                  <i class="fa-solid fa-wallet me-1"></i>Wallet
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary flex-fill slot-pay-btn" data-pay="upi" onclick="selectSlotPayment(this)">
+                  <i class="fa-solid fa-qrcode me-1"></i>UPI / GPay
+                </button>
+              </div>
+              <input type="hidden" id="slot-payment-method" value="cash">
+            </div>
+
+            <!-- Price Total -->
+            <div class="d-flex justify-content-between align-items-center p-2.5 rounded mb-3 bg-light border">
+              <span class="text-muted small">Estimated Total:</span>
+              <strong class="text-primary fs-5" id="slot-modal-price">$45.00</strong>
+            </div>
+
+            <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3" style="font-size:0.78rem;">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Assigns to an available service seat (Seat 1 or Seat 2). If capacity reaches 2/2, you are queued automatically in FIFO order.</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="btn-submit-slot-booking">
+              <i class="fa-solid fa-circle-check me-1"></i>Confirm &amp; Book Slot
+            </button>
+          </form>
         </div>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- How It Works Section -->
-  <section class="py-5" id="stations" style="background:var(--be-dark)">
-    <div class="container py-4">
-      <div class="text-center mb-5">
-        <span class="badge mb-2 px-3 py-1 fw-bold" style="background:rgba(37,99,235,0.1);color:var(--be-primary);border:1px solid rgba(37,99,235,0.25)">WORKFLOW</span>
-        <h2 class="fw-bold text-dark">How The Barbershop Floor Works</h2>
-        <p class="text-muted small">Designed specifically for our 2-chair salon workflow.</p>
-      </div>
-      <div class="row g-4">
-        <div class="col-md-4">
-          <div class="landing-feature-card p-4 h-100 text-center">
-            <div class="mb-3" style="font-size:2rem;color:var(--be-primary)"><i class="fa-solid fa-chair"></i></div>
-            <h5 class="fw-bold text-dark">1. Select Your Station Chair</h5>
-            <p class="text-muted small mb-0">Choose specifically between Main Station 1 or Station 2 based on live floor availability.</p>
-          </div>
+  <!-- ── 2. Join Waiting Queue Modal ── -->
+  <div class="modal fade" id="queueModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-bottom bg-light">
+          <h5 class="modal-title fw-bold text-dark fs-6">
+            <i class="fa-solid fa-ticket text-primary me-2"></i>Join Digital Waiting Queue
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="col-md-4">
-          <div class="landing-feature-card p-4 h-100 text-center">
-            <div class="mb-3" style="font-size:2rem;color:var(--be-primary)"><i class="fa-solid fa-clock"></i></div>
-            <h5 class="fw-bold text-dark">2. Reserve Time Slot</h5>
-            <p class="text-muted small mb-0">Pick your convenient 30-minute grooming window with a 5-minute temporary hold security lock.</p>
+        <div class="modal-body p-4">
+          <div class="p-3 rounded mb-3 bg-light border" style="font-size:0.8rem;">
+            <div class="fw-bold text-dark mb-1"><i class="fa-solid fa-circle-info me-1 text-primary"></i>FIFO Queue Rules</div>
+            <p class="text-muted mb-0">Customers are assigned in strict first-come, first-served order as soon as an active seat service is completed by admin.</p>
           </div>
-        </div>
-        <div class="col-md-4">
-          <div class="landing-feature-card p-4 h-100 text-center">
-            <div class="mb-3" style="font-size:2rem;color:var(--be-primary)"><i class="fa-solid fa-couch"></i></div>
-            <h5 class="fw-bold text-dark">3. Or Take a Waiting Seat</h5>
-            <p class="text-muted small mb-0">If both stations are occupied, take one of the 3 waiting chairs per station to receive an instant queue token.</p>
-          </div>
+
+          <form onsubmit="handleJoinQueueSubmit(event)">
+            <div class="mb-3">
+              <label for="queue-service-select" class="form-label fw-bold small text-muted">Select Service <span class="text-danger">*</span></label>
+              <select class="form-select" id="queue-service-select" required>
+                <!-- Populated dynamically by JS -->
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold text-white" id="join-queue-submit-btn">
+              <i class="fa-solid fa-ticket me-1"></i>Get Digital Token &amp; Join Queue
+            </button>
+          </form>
         </div>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- Services Preview Section -->
-  <section class="py-5" id="services" style="background:#ffffff;border-top:1px solid var(--be-border)">
-    <div class="container py-4">
-      <div class="text-center mb-5">
-        <span class="badge mb-2 px-3 py-1 fw-bold" style="background:rgba(37,99,235,0.1);color:var(--be-primary);border:1px solid rgba(37,99,235,0.25)">SERVICES</span>
-        <h2 class="fw-bold text-dark">Master Grooming Services</h2>
-      </div>
-      <div class="row g-4">
-        <div class="col-md-4">
-          <div class="landing-feature-card p-4 h-100 text-center">
-            <i class="fa-solid fa-scissors display-6 mb-3" style="color:var(--be-primary)"></i>
-            <h5 class="fw-bold text-dark">Signature Haircut</h5>
-            <p class="text-muted small">Precision scissor and clipper grooming with hot towel finish.</p>
-            <span class="badge fs-6 fw-bold" style="background:rgba(37,99,235,0.1);color:var(--be-primary);border:1px solid rgba(37,99,235,0.25)">$45 • 45 min</span>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="landing-feature-card p-4 h-100 text-center">
-            <i class="fa-solid fa-soap display-6 mb-3" style="color:var(--be-primary)"></i>
-            <h5 class="fw-bold text-dark">Hot Towel Shave</h5>
-            <p class="text-muted small">Traditional straight razor shave with essential oil conditioning.</p>
-            <span class="badge fs-6 fw-bold" style="background:rgba(37,99,235,0.1);color:var(--be-primary);border:1px solid rgba(37,99,235,0.25)">$35 • 35 min</span>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="landing-feature-card p-4 h-100 text-center">
-            <i class="fa-solid fa-crown display-6 mb-3" style="color:var(--be-primary)"></i>
-            <h5 class="fw-bold text-dark">Full Executive Package</h5>
-            <p class="text-muted small">Complete master haircut, beard design, facial wash, and head massage.</p>
-            <span class="badge fs-6 fw-bold" style="background:rgba(37,99,235,0.1);color:var(--be-primary);border:1px solid rgba(37,99,235,0.25)">$85 • 80 min</span>
-          </div>
-        </div>
-      </div>
-      <div class="text-center mt-5">
-        <a href="/auth/register.html" class="btn btn-primary btn-lg px-5 fw-bold">Book Your Appointment</a>
-      </div>
-    </div>
-  </section>
+  <!-- Toast Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;" id="toast-container"></div>
 
-  <!-- Footer -->
-  <footer class="py-4 text-center" style="background:#f8fafc;border-top:1px solid var(--be-border)">
-    <div class="container">
-      <p class="text-muted mb-1 small">
-        <i class="fa-solid fa-scissors me-1" style="color:var(--be-primary)"></i> BarberEase – Studio Appointment &amp; Waiting Lounge System
-      </p>
-      <small class="text-muted">&copy; 2026 BarberEase. All rights reserved.</small>
-    </div>
-  </footer>
-
+  <!-- Bootstrap 5 & Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/dashboard.js"></script>
+  <script>
+    // Live Clock & Date Display
+    function updateClock() {
+      const now = new Date();
+      const clockEl = document.getElementById('current-clock-label');
+      const dateEl = document.getElementById('current-date-label');
+      if (clockEl) {
+        clockEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      }
+      if (dateEl) {
+        dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Check navbar auth state on Home Page
+    function updateNavbarAuthState() {
+      const authContainer = document.getElementById('navbar-auth-section');
+      if (!authContainer) return;
+
+      const token = localStorage.getItem('barber_token');
+      const userStr = localStorage.getItem('barber_user');
+      const userType = localStorage.getItem('barber_user_type');
+      const adminToken = localStorage.getItem('barber_admin_token');
+
+      if (adminToken || userType === 'admin') {
+        authContainer.innerHTML = `
+          <div class="d-flex align-items-center gap-1.5 px-2 py-1 bg-danger-subtle text-danger border border-danger-subtle rounded small" style="font-size:0.8rem;">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span class="fw-bold">Admin Portal</span>
+          </div>
+          <a href="/admin/dashboard.html" class="btn btn-sm btn-outline-primary py-1 px-2.5" style="font-size:0.78rem;">Admin Console</a>
+          <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="handleLogout()" title="Sign Out" style="font-size:0.78rem;">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </button>
+        `;
+      } else if (token && userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          authContainer.innerHTML = `
+            <div class="d-flex align-items-center gap-1.5 px-2 py-1 bg-light border rounded text-dark small" style="font-size:0.8rem;">
+              <i class="fa-solid fa-circle-user text-primary"></i>
+              <span class="fw-semibold text-truncate" style="max-width: 130px;">${user.name || 'Customer'}</span>
+              <span class="badge bg-primary ms-1" style="font-size:0.65rem;">Customer</span>
+            </div>
+            <a href="/customer/profile.html" class="btn btn-sm btn-outline-secondary py-1 px-2" title="My Profile" style="font-size:0.78rem;">
+              <i class="fa-solid fa-user"></i>
+            </a>
+            <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="handleLogout()" title="Sign Out" style="font-size:0.78rem;">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </button>
+          `;
+        } catch (e) {
+          // fallback to login/signup
+        }
+      }
+    }
+    updateNavbarAuthState();
+  </script>
 </body>
 </html>
